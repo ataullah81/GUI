@@ -1,7 +1,14 @@
+from threading import Thread
 from tkinter.ttk import *
 from tkinter import *
+import tkinter as tk
+import datetime as dt
 
 from PIL import ImageTk, Image
+from pygame import mixer
+from datetime import datetime
+from time import sleep
+from itertools import repeat
 
 # color
 bg_color = 'white'
@@ -27,11 +34,14 @@ img = Image.open('alarm-clock-80.png')
 img.resize((100, 100))
 img = ImageTk.PhotoImage(img)
 
+
+
 app_image = Label(frame_body, height=100, image=img, bg=bg_color)
 app_image.place(x=10, y=10)
 
 name = Label(frame_body, text='Alarm', height=1, font=('Ivy 18 bold'), bg=bg_color)
 name.place(x=125, y=10)
+
 
 hour = Label(frame_body, text='hour', height=1, font=('Ivy 10 bold'), bg=bg_color, fg=col)
 hour.place(x=127, y=40)
@@ -69,8 +79,59 @@ c_period['values'] = ('AM', 'PM')
 c_period.current(0)
 c_period.place(x=280, y=58)
 
+
+
+def activate_alarm():
+    thread = Thread(target=alarm)
+    thread.start()
+
+def deactivate_alarm():
+    #print('Deactivated alarm: ', selected.get())
+    mixer.music.stop()
+
 selected = IntVar()
 
-rad1 = Radiobutton(frame_body, font=('arial 10 bold'), value=1, text='Activate', bg=bg_color)
+rad1 = Radiobutton(frame_body, font=('arial 10 bold'), value=1, text='Activate', bg=bg_color, command=activate_alarm, variable=selected)
 rad1.place(x=125, y=95)
+
+def sound_alarm():
+
+    mixer.music.load('alarm.mp3')
+
+    mixer.music.play(3)
+    selected.set(0)
+    sleep(1)
+
+    rad2 = Radiobutton(frame_body, font=('arial 10 bold'), value=2, text='Deactivate', bg=bg_color, command=deactivate_alarm, variable=selected)
+    rad2.place(x=207, y=95)
+
+def alarm():
+    while True:
+        control = selected.get()
+        #print(control)
+        alarm_hour = c_hour.get()
+        alarm_minute = c_min.get()
+        alarm_sec = c_sec.get()
+        alarm_period = c_period.get()
+        alarm_period = str(alarm_period).upper()
+
+        now = datetime.now()
+
+        hour = now.strftime('%I')
+        minute = now.strftime('%M')
+        second = now.strftime('%S')
+        period = now.strftime('%p')
+
+        if control == 1:
+            if alarm_period == period:
+                if alarm_hour == hour:
+                    if alarm_minute == minute:
+                        if alarm_sec == second:
+                            #print('Time to take a break')
+
+                            sound_alarm()
+
+        sleep(1)
+
+mixer.init()
 window.mainloop()
