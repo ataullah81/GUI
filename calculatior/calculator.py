@@ -1,5 +1,5 @@
 import tkinter as tk
-
+from tkinter import *
 calculation = ""
 
 
@@ -8,6 +8,7 @@ def add_to_calculation(symbol):
     calculation += str(symbol)
     text_result.delete(1.0, "end")
     text_result.insert(1.0, calculation)
+
 
 
 def evaluate_calculation():
@@ -26,22 +27,29 @@ def clear_field():
     calculation = ""
     text_result.delete(1.0, "end")
 
-
 def clear_digit():
     global calculation
-    calculation = ""
-    text_result.delete("end-2c", "end")
+   # calculation = ""
+    text_result.delete("end-2c")
+    text_result.update()
 
 
+# Create root window
 root = tk.Tk()
+# Size of the app window
 root.geometry("300x300")
+# App window background color
 root.configure(background="light green")
+# Display app title
 root.title("Basic Calculator")
+# Display the app window in center
 root.eval('tk::PlaceWindow . center')
+# Disabling resizing the app window
+root.resizable(0, 0)
 
 
-text_result = tk.Text(root, height=2, width=16, font=("Arial", 24))
-text_result.grid(row=0, column=1, padx=4, pady=10, columnspan=4)
+text_result = tk.Text(root, height=2, width=16, font=("Arial", 23), bd=8, relief=SUNKEN)
+text_result.grid(row=0, column=1, padx=5, pady=7, columnspan=4)
 
 btn_1 = tk.Button(root, text="1", command=lambda: add_to_calculation(1), width=5, font=("Arial", 14))
 btn_1.grid(row=2, column=1)
@@ -75,12 +83,12 @@ btn_open = tk.Button(root, text="(", command=lambda: add_to_calculation("("), wi
 btn_open.grid(row=5, column=1)
 btn_close = tk.Button(root, text=")", command=lambda: add_to_calculation(")"), width=5, font=("Arial", 14))
 btn_close.grid(row=5, column=3)
-btn_clear = tk.Button(root, text="C", command=clear_field, width=5, font=("Arial", 14))
+btn_clear = tk.Button(root, text="AC", command=clear_field, width=5, font=("Arial", 14))
 btn_clear.grid(row=6, column=1)
 btn_decimal = tk.Button(root, text=".", command=lambda: add_to_calculation("."), width=5, font=("Arial", 14))
 btn_decimal.grid(row=6, column=2)
 btn_equals = tk.Button(root, text="=", command=evaluate_calculation, width=5, font=("Arial", 14))
 btn_equals.grid(row=6, column=3)
-btn_clear_digit = tk.Button(root, text="x", command=clear_digit, width=5, font=("Arial", 14))
+btn_clear_digit = tk.Button(root, text="C", command=clear_digit, width=5, font=("Arial", 14))
 btn_clear_digit.grid(row=6, column=4)
 root.mainloop()
