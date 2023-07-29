@@ -5,6 +5,7 @@ import speech_recognition
 
 mixer.init()
 
+
 def click(value):
     # print(value)
     ex = entryField.get()
@@ -95,49 +96,83 @@ def click(value):
 
     except SyntaxError:
         pass
+
+
 def add(a, b):
     return a + b
+
 
 def sub(a, b):
     return a - b
 
+
 def mul(a, b):
     return a * b
+
 
 def div(a, b):
     return a / b
 
+
 def mod(a, b):
     return a % b
+
 
 def lcm(a, b):
     l = math.lcm(a, b)
     return l
 
+
 def hcf(a, b):
     h = math.gcd(a, b)
     return h
 
-operations = {'ADD':add}
+
+operations = {'ADD': add, 'ADDITION': add, 'SUM': add, 'PLUS': add,
+              'SUBTRACTION': sub, 'DIFFERENCE': sub, 'MINUS': sub, 'SUBTRACT': sub,
+              'PRODUCT': mul, 'MULTIPLICATION': mul, 'MULTIPLY': mul,
+              'DIVISION': div, 'DIV': div, 'DIVIDE': div,
+              'LCM': lcm, 'HCF': hcf,
+              'MOD': mod, 'REMAINDER': mod, 'MODULUS': mod}
+
+
+def findnumbers(t):
+    l = []
+    for num in t:
+        try:
+            l.append(int(num))
+        except ValueError:
+            pass
+    return l
+
+
 def audio():
-    #print("Audio button clicked")
+    # print("Audio button clicked")
     mixer.music.load('music1.mp3')
     mixer.music.play()
     sr = speech_recognition.Recognizer()
-    with speech_recognition.Microphone()as m:
+    with speech_recognition.Microphone() as m:
         try:
             sr.adjust_for_ambient_noise(m, duration=0.2)
             voice = sr.listen(m)
             text = sr.recognize_google(voice)
-            print(text)
+            # print(text)
             mixer.music.load('music2.mp3')
             mixer.music.play()
             text_list = text.split(' ')
-            print(text_list)
+            # print(text_list)
+
+            for word in text_list:
+                if word.upper() in operations.keys():
+                    l = findnumbers(text_list)
+                    print(l)
+                    result = operations[word.upper()](l[0], l[1])
+                    entryField.delete(0, END)
+                    entryField.insert(END, result)
+                else:
+                    pass
         except:
             pass
-
-
 
 
 root = Tk()
@@ -156,7 +191,7 @@ entryField.grid(row=0, column=0, columnspan=8)
 
 micImage = PhotoImage(file='microphone.png')
 micButton = Button(root, image=micImage, bd=0, bg='lightgreen', activebackground='lightgreen'
-                   ,command=audio)
+                   , command=audio)
 micButton.grid(row=0, column=7)
 
 button_text_list = ["C", "CE", "√", "+", "π", "cosθ", "tanθ", "sinθ",
