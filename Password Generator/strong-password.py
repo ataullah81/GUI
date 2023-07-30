@@ -6,11 +6,11 @@ root = Tk()
 
 root.title('Strong Password Generator')
 root.geometry('500x300')
-root.resizable(0, 0)
+root.resizable(0,0)
 
 
 # Generate random strong password
-def new_rand():
+def random():
     # Clear entry box
     pw_entry.delete(0, END)
     # Get password length and convert to integer
@@ -27,12 +27,12 @@ def new_rand():
 
 
 # Copy to clipboard
-def clipper():
+def clipping():
     # Clear the clipborad
     root.clipboard_clear()
     # Copy to clipborad
     root.clipboard_append(pw_entry.get())
-    tkinter.messagebox.showinfo('','Password copied')
+    tkinter.messagebox.showinfo('', 'Password copied')
 
 
 # Label Frame
@@ -46,8 +46,8 @@ my_entry.pack(pady=20, padx=20)
 lf2 = LabelFrame(root, text='Generated Password', bd=5)
 lf2.pack()
 # Create entry box for our returned password
-pw_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='systembuttonface')
-pw_entry.pack(pady=10)
+pw_entry = Entry(lf2, text = '', font=('Helvetica', 24), bd=0, bg='systembuttonface')
+pw_entry.pack(pady=(0, 20))
 
 # Create frame for our buttons
 my_frame = Frame(root)
@@ -55,10 +55,13 @@ my_frame.pack(pady=20)
 
 # Create our buttons
 
-my_button = Button(my_frame, text='Generate Strong Password', command=new_rand)
+my_button = Button(my_frame, text='Generate Strong Password', command=random)
 my_button.grid(row=0, column=0, padx=10)
 
-clip_button = Button(my_frame, text='Copy To Clipboard', command=clipper)
+clip_button = Button(my_frame, text='Copy To Clipboard', command=clipping)
 clip_button.grid(row=0, column=1, padx=10)
+
+lbl = Label(root, text='©arb')
+lbl.pack(anchor='se')
 
 root.mainloop()
