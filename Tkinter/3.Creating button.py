@@ -17,7 +17,4 @@ def clickMe():
 btn = Button(root,text='Click me',font=('Helvetica',20), padx=20,pady=20,fg='blue', bg='green', command=clickMe)
 btn.pack()
 
-
-
-
 root.mainloop()
