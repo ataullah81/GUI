@@ -4,6 +4,9 @@ root = Tk()
 root.title('Calculator')
 root.geometry()
 
+img = PhotoImage(file='logo.png')
+root.iconphoto(False, img)
+
 ent_box = Entry(root, font=('arial',20), width=20, borderwidth=5)
 ent_box.grid(row=0, column=0, columnspan=4, padx=10, pady=10)
 
