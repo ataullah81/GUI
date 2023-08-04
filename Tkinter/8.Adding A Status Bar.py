@@ -4,7 +4,7 @@ from PIL import ImageTk,Image
 
 root = Tk()
 root.title("Learn python")
-root.geometry('700x620')
+root.geometry('700x630')
 #root.iconbitmap('logo.png')
 img = PhotoImage(file='icon.png')
 root.iconphoto(False, img)
@@ -32,7 +32,7 @@ my_img5 = ImageTk.PhotoImage(resize_img5)
 
 image_list = [my_img1,my_img2,my_img3,my_img4,my_img5]
 # Status bar for first page/
-status = Label(root, text='Image of ' + str(len(image_list)), bd=1, relief=SUNKEN, anchor=E)
+status = Label(root, text='Image of ' + str(len(image_list)),padx=10, bd=1, relief=SUNKEN, anchor=E)
 
 my_label = Label(root,image=my_img1) # Same way we can put image on the button
 my_label.grid(row=0,column=0,columnspan=3)
@@ -54,8 +54,8 @@ def forward(image_number):
     btn_back.grid(row=1, column=0)
     btn_forward.grid(row=1, column=2)
 
-    status = Label(root, text='Image ' + str(image_number) + ' of ' + str(len(image_list)), bd=1, relief=SUNKEN, anchor=E)
-    status.grid(row=2, column=0, columnspan=3, sticky=W + E)
+    status = Label(root, text='Image ' + str(image_number) + ' of ' + str(len(image_list)),padx=10, bd=1, relief=SUNKEN, anchor=E)
+    status.grid(row=2, column=0,pady=(0,10), columnspan=3, sticky=W + E)
 
 
 def back(image_number):
@@ -74,8 +74,8 @@ def back(image_number):
     btn_back.grid(row=1, column=0)
     btn_forward.grid(row=1, column=2)
 # Status bar
-    status = Label(root, text='Image ' + str(image_number) + ' of ' + str(len(image_list)), bd=1, relief=SUNKEN,anchor=E)
-    status.grid(row=2, column=0, columnspan=3, sticky=W + E)
+    status = Label(root, text='Image ' + str(image_number) + ' of ' + str(len(image_list)),padx=10,bd=1, relief=SUNKEN,anchor=E)
+    status.grid(row=2, column=0,pady=(0,10), columnspan=3, sticky=W + E)
 
 btn_back = Button(root,text='<<',command=back, state=DISABLED)
 btn_exit = Button(root, text='Exit',font=('Helvetica',10),command=root.quit)
@@ -83,5 +83,5 @@ btn_forward = Button(root,text='>>',command=lambda: forward(2))
 btn_back.grid(row=1,column=0)
 btn_exit.grid(row=1,column=1)
 btn_forward.grid(row=1,column=2,pady=10)
-status.grid(row=2,column=0, columnspan=3, sticky=W+E)
+status.grid(row=2,column=0,pady=(0,10), columnspan=3, sticky=W+E)
 root.mainloop()
