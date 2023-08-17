@@ -27,6 +27,57 @@ cur_sor.execute("""CREATE TABLE addresses(
                 zipcode integer)
 """)
 '''
+#Update function
+def edit():
+    editor = Tk()
+    editor.title('Edit Record')
+    editor.geometry('300x500')
+
+
+    # Create text boxes
+    first_name_editor = Entry(editor, width=30)
+    first_name_editor.grid(row=0, column=1, pady=(10, 0), padx=20)
+
+    last_name_editor = Entry(editor, width=30)
+    last_name_editor.grid(row=1, column=1, padx=20)
+
+    address_editor = Entry(editor, width=30)
+    address_editor.grid(row=2, column=1, padx=20)
+
+    city_editor = Entry(editor, width=30)
+    city_editor.grid(row=3, column=1, padx=20)
+
+    state_editor = Entry(editor, width=30)
+    state_editor.grid(row=4, column=1, padx=20)
+
+    zipcode_editor = Entry(editor, width=30)
+    zipcode_editor.grid(row=5, column=1, padx=20)
+
+
+
+    # Create labels
+    first_name_lbl = Label(editor, text='First Name: ')
+    first_name_lbl.grid(row=0, column=0)
+
+    last_name_lbl = Label(editor, text='Last Name: ')
+    last_name_lbl.grid(row=1, column=0)
+
+    address_lbl = Label(editor, text='Address: ')
+    address_lbl.grid(row=2, column=0)
+
+    city_lbl = Label(editor, text='City: ')
+    city_lbl.grid(row=3, column=0)
+
+    state_lbl = Label(editor, text='State: ')
+    state_lbl.grid(row=4, column=0)
+
+    zipcode_lbl = Label(editor, text='Post code: ')
+    zipcode_lbl.grid(row=5, column=0)
+
+    save_btn = Button(editor,text='Save')
+    save_btn.grid(row=6,column=0,columnspan=2,pady=10, padx=10, ipadx=95)
+
+
 # Create function to delete a record
 def delete():
     conn = sqlite3.connect('address_book.db')
@@ -46,8 +97,8 @@ def submit():
 
     # Create cursor
     cur_sor = conn.cursor()
-    # Create table
-    #clear text boxes
+
+
     #Insert into table
 
     conn.execute("INSERT INTO addresses VALUES (:first_name, :last_name, :address, :city, :state, :zipcode)",
@@ -63,11 +114,11 @@ def submit():
 
                  )
 
-
     # Commit changes
     conn.commit()
     # Close connection
     conn.close()
+    # clear text boxes
     first_name.delete(0,END)
     last_name.delete(0,END)
     address.delete(0,END)
@@ -91,7 +142,7 @@ def show():
     for record in records:
         print_records += str(record[0]) + " " + str(record[1]) + " " + "\t" + str(record[6]) + '\n'
     query_lbl = Label(root, text = print_records)
-    query_lbl.grid(row=11,column=0, columnspan=2)
+    query_lbl.grid(row=12,column=0, columnspan=2)
 
     # Commit changes
     conn.commit()
@@ -141,7 +192,7 @@ state_lbl.grid(row=4,column=0)
 zipcode_lbl = Label(root,text ='Post code: ')
 zipcode_lbl.grid(row=5,column=0)
 
-delete_lbl = Label(root,text='Delete ID: ')
+delete_lbl = Label(root,text='Select ID: ')
 delete_lbl.grid(row=9,column=0)
 
 # create submit button
@@ -156,6 +207,10 @@ btn_query.grid(row=7, column=0,columnspan=2,pady=10, padx=10, ipadx=95)
 btn_delete = Button(root,text='Delete Record', command=delete)
 btn_delete.grid(row=10,column=0,columnspan=2,pady=10, padx=10, ipadx=95)
 
+
+#Create and Update Button
+btn_update = Button(root,text='Update Record', command=edit)
+btn_update.grid(row=11,column=0,columnspan=2,pady=10, padx=10, ipadx=94)
 # Commit changes
 conn.commit()
 #Close connection
