@@ -27,11 +27,56 @@ cur_sor.execute("""CREATE TABLE addresses(
                 zipcode integer)
 """)
 '''
+
 #Update function
+def update():
+    conn = sqlite3.connect('address_book.db')
+    # Create cursor
+    cur_sor = conn.cursor()
+
+    cur_sor.execute(""" UPDATE addresses SET 
+        first_name= :first,
+        last_name = :last,
+        address = :address,
+        city = :city,
+        state = :state,
+        zipcode = :zipcode
+        WHERE oid =:oid""",
+
+                    {
+                        'first': first_name_editor.get()
+                    }
+                    )
+
+
+    # Commit changes
+    conn.commit()
+    # Close connection
+    conn.close()
+
+
+#Edit function
 def edit():
     editor = Tk()
     editor.title('Edit Record')
     editor.geometry('300x500')
+    # Create database connection
+    conn = sqlite3.connect('address_book.db')
+    # Create cursor
+    cur_sor = conn.cursor()
+
+    record_ID = delete_box.get()
+    # Query the database
+    cur_sor.execute("SELECT * FROM addresses where oid = " + record_ID)
+    records = cur_sor.fetchall()
+
+    # create global variables for text boxes
+    global first_name_editor
+    global last_name_editor
+    global address_editor
+    global city_editor
+    global state_editor
+    global zipcode_editor
 
 
     # Create text boxes
@@ -73,6 +118,16 @@ def edit():
 
     zipcode_lbl = Label(editor, text='Post code: ')
     zipcode_lbl.grid(row=5, column=0)
+
+    # For loop thru retults
+    for record in records:
+        first_name_editor.insert(0, record[0])
+        last_name_editor.insert(0, record[1])
+        address_editor.insert(0, record[2])
+        city_editor.insert(0, record[3])
+        state_editor.insert(0, record[4])
+        zipcode_editor.insert(0, record[5])
+
 # Save edited record
     save_btn = Button(editor,text='Save')
     save_btn.grid(row=6,column=0,columnspan=2,pady=10, padx=10, ipadx=95)
@@ -131,6 +186,7 @@ def show():
     show = Tk()
     show.title('Show Record')
     show.geometry('300x300')
+    #Create database connection
     conn = sqlite3.connect('address_book.db')
     # Create cursor
     cur_sor = conn.cursor()
