@@ -73,7 +73,7 @@ def edit():
 
     zipcode_lbl = Label(editor, text='Post code: ')
     zipcode_lbl.grid(row=5, column=0)
-
+# Save edited record
     save_btn = Button(editor,text='Save')
     save_btn.grid(row=6,column=0,columnspan=2,pady=10, padx=10, ipadx=95)
 
@@ -128,6 +128,9 @@ def submit():
 
 # Create query function
 def show():
+    show = Tk()
+    show.title('Show Record')
+    show.geometry('300x300')
     conn = sqlite3.connect('address_book.db')
     # Create cursor
     cur_sor = conn.cursor()
@@ -141,8 +144,8 @@ def show():
     print_records = ''
     for record in records:
         print_records += str(record[0]) + " " + str(record[1]) + " " + "\t" + str(record[6]) + '\n'
-    query_lbl = Label(root, text = print_records)
-    query_lbl.grid(row=12,column=0, columnspan=2)
+    query_lbl = Label(show, text = print_records)
+    query_lbl.grid(row=0,column=2,pady = 10, padx=(100,100))
 
     # Commit changes
     conn.commit()
