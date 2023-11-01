@@ -33,7 +33,7 @@ def update():
     conn = sqlite3.connect('address_book.db')
     # Create cursor
     cur_sor = conn.cursor()
-
+    record_id = delete_box.get()
     cur_sor.execute(""" UPDATE addresses SET 
         first_name= :first,
         last_name = :last,
@@ -41,11 +41,17 @@ def update():
         city = :city,
         state = :state,
         zipcode = :zipcode
-        WHERE oid =:oid""",
+        WHERE oid = :oid""",
 
                     {
-                        'first': first_name_editor.get()
-                    }
+                        'first': first_name_editor.get(),
+                        'last': last_name_editor.get(),
+                        'address': address_editor.get(),
+                        'city': city_editor.get(),
+                        'state': state_editor.get(),
+                        'zipcode': zipcode_editor.get(),
+                        'oid': record_id
+                        }
                     )
 
 
@@ -53,13 +59,14 @@ def update():
     conn.commit()
     # Close connection
     conn.close()
-
+    editor.destroy()
 
 #Edit function
 def edit():
+    global editor
     editor = Tk()
     editor.title('Edit Record')
-    editor.geometry('300x500')
+    editor.geometry('300x200')
     # Create database connection
     conn = sqlite3.connect('address_book.db')
     # Create cursor
@@ -129,7 +136,7 @@ def edit():
         zipcode_editor.insert(0, record[5])
 
 # Save edited record
-    save_btn = Button(editor,text='Save')
+    save_btn = Button(editor,text='Save Record', command=update)
     save_btn.grid(row=6,column=0,columnspan=2,pady=10, padx=10, ipadx=95)
 
 
