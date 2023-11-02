@@ -50,6 +50,7 @@ def browse_output():
 # Create the main application window
 root = tk.Tk()
 root.geometry('380x150')
+#root.configure(background='blue')
 
 root.title("File Comparison Tool")
 
@@ -82,7 +83,7 @@ browse_button2.grid(row=1, column=2)
 browse_button_output.grid(row=2, column=2)
 
 # Compare button
-compare_button = tk.Button(root, text="Compare Files", command=compare_files,padx=30,bg='#64E986',borderwidth=5)
+compare_button = tk.Button(root, text="Compare Files", command=compare_files,padx=30,pady=2,borderwidth=2)
 compare_button.grid(row=3, column=1)
 
 # Result label
