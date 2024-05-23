@@ -203,6 +203,11 @@ def show():
     records = cur_sor.fetchall()
    # print(records)
 
+    # Create query function
+
+
+    # print(records)
+
 # Loop through results
     print_records = ''
     for record in records:
@@ -215,6 +220,89 @@ def show():
 
     # Close connection
     conn.close()
+
+
+
+def showbyid():
+    global editor
+    editor = Tk()
+    editor.title('Edit Record')
+    editor.geometry('300x200')
+    # Create database connection
+    conn = sqlite3.connect('address_book.db')
+    # Create cursor
+    cur_sor = conn.cursor()
+
+    show_ID = delete_box.get()
+    # Query the database
+    cur_sor.execute("SELECT * FROM addresses where oid = " + show_ID)
+    records = cur_sor.fetchall()
+
+    # create global variables for text boxes
+    global first_name_editor
+    global last_name_editor
+    global address_editor
+    global city_editor
+    global state_editor
+    global zipcode_editor
+
+
+    # Create text boxes
+    first_name_editor = Entry(editor, width=30)
+    first_name_editor.grid(row=0, column=1, pady=(10, 0), padx=20)
+
+    last_name_editor = Entry(editor, width=30)
+    last_name_editor.grid(row=1, column=1, padx=20)
+
+    address_editor = Entry(editor, width=30)
+    address_editor.grid(row=2, column=1, padx=20)
+
+    city_editor = Entry(editor, width=30)
+    city_editor.grid(row=3, column=1, padx=20)
+
+    state_editor = Entry(editor, width=30)
+    state_editor.grid(row=4, column=1, padx=20)
+
+    zipcode_editor = Entry(editor, width=30)
+    zipcode_editor.grid(row=5, column=1, padx=20)
+
+
+
+    # Create labels
+    first_name_lbl = Label(editor, text='First Name: ')
+    first_name_lbl.grid(row=0, column=0)
+
+    last_name_lbl = Label(editor, text='Last Name: ')
+    last_name_lbl.grid(row=1, column=0)
+
+    address_lbl = Label(editor, text='Address: ')
+    address_lbl.grid(row=2, column=0)
+
+    city_lbl = Label(editor, text='City: ')
+    city_lbl.grid(row=3, column=0)
+
+    state_lbl = Label(editor, text='State: ')
+    state_lbl.grid(row=4, column=0)
+
+    zipcode_lbl = Label(editor, text='Post code: ')
+    zipcode_lbl.grid(row=5, column=0)
+
+    # For loop thru retults
+    for record in records:
+        first_name_editor.insert(0, record[0])
+        last_name_editor.insert(0, record[1])
+        address_editor.insert(0, record[2])
+        city_editor.insert(0, record[3])
+        state_editor.insert(0, record[4])
+        zipcode_editor.insert(0, record[5])
+
+# Save edited record
+    save_btn = Button(editor,text='Exit', command=editor.quit)
+    save_btn.grid(row=6,column=0,columnspan=2,pady=10, padx=10, ipadx=95)
+
+
+
+
 
 # Create text boxes
 first_name = Entry(root,width=30)
@@ -268,6 +356,11 @@ btn.grid(row=6, column=0, columnspan=2, pady=10, padx=10, ipadx=100)
 # create query button
 btn_query = Button(root, text ='Show records', command=show)
 btn_query.grid(row=7, column=0,columnspan=2,pady=10, padx=10, ipadx=95)
+
+# create query button by id
+btn_query = Button(root, text ='Show records by ID', command=showbyid)
+btn_query.grid(row=8, column=0,columnspan=10,pady=10, padx=10, ipadx=95)
+
 #Create a delete button
 
 btn_delete = Button(root,text='Delete Record', command=delete)
