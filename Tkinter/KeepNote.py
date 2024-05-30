@@ -5,7 +5,7 @@ import  sqlite3
 
 root = Tk()
 root.title('Database Connection')
-root.geometry('300x500')
+root.geometry('1000x900')
 img = PhotoImage(file='icon.png')
 root.iconphoto(False, img)
 
@@ -192,7 +192,7 @@ def submit():
 def show():
     show = Tk()
     show.title('Show Record')
-    show.geometry('300x300')
+    show.geometry('600x600')
     #Create database connection
     conn = sqlite3.connect('address_book.db')
     # Create cursor
@@ -224,10 +224,10 @@ def show():
 
 
 def showbyid():
-    global editor
-    editor = Tk()
-    editor.title('Edit Record')
-    editor.geometry('300x200')
+    global show_record
+    show_record = Tk()
+    show_record.title('Show Record')
+    show_record.geometry('300x200')
     # Create database connection
     conn = sqlite3.connect('address_book.db')
     # Create cursor
@@ -248,43 +248,43 @@ def showbyid():
 
 
     # Create text boxes
-    first_name_editor = Entry(editor, width=30)
+    first_name_editor = Entry(show_record, width=30)
     first_name_editor.grid(row=0, column=1, pady=(10, 0), padx=20)
 
-    last_name_editor = Entry(editor, width=30)
+    last_name_editor = Entry(show_record, width=30)
     last_name_editor.grid(row=1, column=1, padx=20)
 
-    address_editor = Entry(editor, width=30)
+    address_editor = Entry(show_record, width=30)
     address_editor.grid(row=2, column=1, padx=20)
 
-    city_editor = Entry(editor, width=30)
+    city_editor = Entry(show_record, width=30)
     city_editor.grid(row=3, column=1, padx=20)
 
-    state_editor = Entry(editor, width=30)
+    state_editor = Entry(show_record, width=30)
     state_editor.grid(row=4, column=1, padx=20)
 
-    zipcode_editor = Entry(editor, width=30)
+    zipcode_editor = Entry(show_record, width=30)
     zipcode_editor.grid(row=5, column=1, padx=20)
 
 
 
     # Create labels
-    first_name_lbl = Label(editor, text='First Name: ')
+    first_name_lbl = Label(show_record, text='First Name: ')
     first_name_lbl.grid(row=0, column=0)
 
-    last_name_lbl = Label(editor, text='Last Name: ')
+    last_name_lbl = Label(show_record, text='Last Name: ')
     last_name_lbl.grid(row=1, column=0)
 
-    address_lbl = Label(editor, text='Address: ')
+    address_lbl = Label(show_record, text='Address: ')
     address_lbl.grid(row=2, column=0)
 
-    city_lbl = Label(editor, text='City: ')
+    city_lbl = Label(show_record, text='City: ')
     city_lbl.grid(row=3, column=0)
 
-    state_lbl = Label(editor, text='State: ')
+    state_lbl = Label(show_record, text='State: ')
     state_lbl.grid(row=4, column=0)
 
-    zipcode_lbl = Label(editor, text='Post code: ')
+    zipcode_lbl = Label(show_record, text='Post code: ')
     zipcode_lbl.grid(row=5, column=0)
 
     # For loop thru retults
@@ -297,7 +297,7 @@ def showbyid():
         zipcode_editor.insert(0, record[5])
 
 # Save edited record
-    save_btn = Button(editor,text='Exit', command=editor.quit)
+    save_btn = Button(show_record,text='Exit', command=show_record.destroy)
     save_btn.grid(row=6,column=0,columnspan=2,pady=10, padx=10, ipadx=95)
 
 
