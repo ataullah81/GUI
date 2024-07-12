@@ -75,7 +75,7 @@ def about():
     about_window.geometry('300x200')
     lbl = Label(about_window, text='Copyright ©arbrtech. All Rights Reserved', fg='white', bg='#36454F')
     lbl.pack(pady=90, anchor='s')
-    # lbl.grid(row=10, column=2, pady=(10, 0), padx=20)
+    #lbl.grid(row=10, column=2, pady=(10, 0), padx=20)
 def find():
     hide_all_frame()
     find_window=Tk()
@@ -188,7 +188,9 @@ def add_new():
 def hide_all_frame():
     file_add_frame.pack_forget()
     edit_edit_frame.pack_forget()
+    edit_delete_frame.pack_forget()
     main_frame.pack_forget()
+
 
 #Update function
 def update():
@@ -351,7 +353,6 @@ def show():
     records = cur_sor.fetchall()
 
 
-
     # print(records)
     name_lbl = Label(show, text='Customer name:')
     name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7,sticky='w')
@@ -422,6 +423,52 @@ def show():
     conn.close()
 
 z = StringVar()
+y = StringVar()
+
+
+def fetch():
+    hide_all_frame()
+    # create global variables for text boxes
+    #global customer_name
+
+    edit_delete_frame.pack(pady=20, padx=60, fill='both', expand=True)
+
+    customer_name_lbl = Label(edit_delete_frame, text='Customer name: ', font=('Helvetica', 10), bg='gray')
+    customer_name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
+    del_customer_name = Entry(edit_delete_frame,textvariable=y,  width=50)
+    del_customer_name.insert(0, 'Enter customer name')
+    del_customer_name.configure(state='disabled')
+
+    def on_click(event):  # this function for place holder in entry box
+
+        del_customer_name.configure(state=NORMAL)
+        del_customer_name.delete(0, END)
+
+    del_customer_name.bind('<Button-1>', on_click)
+    del_customer_name.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
+
+    def delete():
+
+        conn = sqlite3.connect('customer_book.db')
+
+        # Create cursor
+        cur_sor = conn.cursor()
+        # Delete a record
+        cur_sor.execute("delete FROM customer where name like ?COLLATE NOCASE", ('%' + y.get() + '%',))
+
+        # Commit changes
+        conn.commit()
+        # Close connection
+        conn.close()
+        # del_customer_name.delete(0, END)
+        del_customer_name.delete(0, END)
+    # delete record
+    delete_btn = Button(edit_delete_frame, text='Delete', command=delete)
+    delete_btn.grid(row=8, column=2, columnspan=2, pady=10, padx=10, ipadx=95)
+
+
+
+
 
 
 #Create a  menu item
@@ -437,7 +484,7 @@ file_menu.add_command(label="Exit",command=root.quit)
 edit_menu = Menu(my_menu)
 my_menu.add_cascade(label="Edit",menu=edit_menu)
 edit_menu.add_command(label="Edit Record",command=edit)
-edit_menu.add_command(label="Delete Record",command=our_command)
+edit_menu.add_command(label="Delete Record",command=fetch)
 
 # Create a Options item
 option_menu = Menu(my_menu)
@@ -455,6 +502,7 @@ option_menu.add_command(label="About",command=about)
 main_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='green')
 file_add_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 edit_edit_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+edit_delete_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 
 find_lbl = customtkinter.CTkLabel(root,text = 'Find Customer')
 find_lbl.pack()
