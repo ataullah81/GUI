@@ -1,6 +1,7 @@
 import customtkinter
 from tkinter import *
 from tkcalendar import *
+from datetime import datetime
 import sqlite3
 
 from tkcalendar import Calendar
@@ -35,7 +36,8 @@ c.execute("""CREATE TABLE customer (
             ftp_link text,
             ftp_username text,
             frp_password text,
-            info text
+            info text,
+            modifydate text
             
             )""")
 '''
@@ -155,7 +157,8 @@ def add_new():
 
     def submit():
         conn =sqlite3.connect('customer_book.db')
-        conn.execute("INSERT INTO customer VALUES (:name, :date, :link2, :link3, :ftp_link, :ftp_username, :ftp_pass, :notes)",
+        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute("INSERT INTO customer VALUES (:name, :date, :link2, :link3, :ftp_link, :ftp_username, :ftp_pass, :notes, :modifydate)",
                     {
                         'name':customer_name.get(),
                         'date':customer_date.get(),
@@ -164,7 +167,8 @@ def add_new():
                         'ftp_link':customer_ftp_link.get(),
                         'ftp_username':customer_ftp_username.get(),
                         'ftp_pass':customer_ftp_pass.get(),
-                        'notes':customer_info.get()
+                        'notes':customer_info.get(),
+                        'modifydate':current_date
                     }
 
                      )
@@ -198,6 +202,7 @@ def update():
     # Create cursor
     cur_sor = conn.cursor()
     record_id = customer_name.get()
+    current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cur_sor.execute(""" UPDATE customer SET 
         name= :name,
         date = :date,
@@ -206,7 +211,8 @@ def update():
         ftp_link = :ftp_link,
         ftp_username = :ftp_username,
         frp_password = :ftp_pass,
-        info = :notes
+        info = :notes,
+        modifydate = current_date
         WHERE name = :name""",
 
                     {
@@ -217,7 +223,8 @@ def update():
                         'ftp_link':customer_ftp_link.get(),
                         'ftp_username':customer_ftp_username.get(),
                         'ftp_pass':customer_ftp_pass.get(),
-                        'notes':customer_info.get()
+                        'notes':customer_info.get(),
+                        'modifydate':current_date
                         }
                     )
 
