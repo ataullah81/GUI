@@ -2,6 +2,7 @@ import customtkinter
 from tkinter import *
 from tkcalendar import *
 from datetime import datetime
+from tkinter import messagebox
 import sqlite3
 
 from tkcalendar import Calendar
@@ -25,9 +26,9 @@ conn =sqlite3.connect('customer_book.db')
 #Create cursor
 c = conn.cursor()
 
-
-#Create table
 '''
+#Create table
+
 c.execute("""CREATE TABLE customer (
             name text,
             date text,
@@ -150,41 +151,51 @@ def add_new():
 
     customer_info_lbl = Label(file_add_frame, text='Notes: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
     customer_info_lbl.grid(row=7, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_info = Entry(file_add_frame, width=70)
+    #customer_info = Entry(file_add_frame, width=70)
+    customer_info = Text(file_add_frame, height=5,width=52)
     customer_info.grid(row=7, column=2, pady=(10, 0), padx=7, sticky='w')
 
 
 
     def submit():
         conn =sqlite3.connect('customer_book.db')
+        cursor = conn.cursor()
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        conn.execute("INSERT INTO customer VALUES (:name, :date, :link2, :link3, :ftp_link, :ftp_username, :ftp_pass, :notes, :modifydate)",
-                    {
-                        'name':customer_name.get(),
-                        'date':customer_date.get(),
-                        'link2':customer_link1.get(),
-                        'link3':customer_link2.get(),
-                        'ftp_link':customer_ftp_link.get(),
-                        'ftp_username':customer_ftp_username.get(),
-                        'ftp_pass':customer_ftp_pass.get(),
-                        'notes':customer_info.get(),
-                        'modifydate':current_date
-                    }
-
-                     )
-        #Commit changes
-        conn.commit()
-        #Close connection
-        conn.close()
-        #Clear text boxes
-        customer_name.delete(0, END)
-        customer_date.delete(0,END)
-        customer_link1.delete(0,END)
-        customer_link2.delete(0,END)
-        customer_ftp_link.delete(0,END)
-        customer_ftp_username.delete(0,END)
-        customer_ftp_pass.delete(0,END)
-        customer_info.delete(0,END)
+        try:
+            #cursor.execute("SELECT name FROM customer where name = ?",(customer_name.get(),))
+            cursor.execute("SELECT name FROM customer WHERE LOWER(name) = LOWER(?)", (customer_name.get(),))
+            if cursor.fetchone():
+                messagebox.showerror("Error", "Customer name already exists!")
+            else:
+                cursor.execute("INSERT INTO customer VALUES (:name, :date, :link2, :link3, :ftp_link, :ftp_username, :ftp_pass, :notes, :modifydate)",
+                            {
+                                'name':customer_name.get(),
+                                'date':customer_date.get(),
+                                'link2':customer_link1.get(),
+                                'link3':customer_link2.get(),
+                                'ftp_link':customer_ftp_link.get(),
+                                'ftp_username':customer_ftp_username.get(),
+                                'ftp_pass':customer_ftp_pass.get(),
+                                'notes':customer_info.get("1.0",'end-1c'),
+                                'modifydate':current_date
+                            })
+                #Commit changes
+                conn.commit()
+                messagebox.showinfo("Success", "Record added successfully")
+        except sqlite3.Error as e:
+            messagebox.showerror("Error", f"An error occurred: {e}")
+            #Close connection
+        finally:
+            conn.close()
+            #Clear text boxes
+            customer_name.delete(0, END)
+            customer_date.delete(0,END)
+            customer_link1.delete(0,END)
+            customer_link2.delete(0,END)
+            customer_ftp_link.delete(0,END)
+            customer_ftp_username.delete(0,END)
+            customer_ftp_pass.delete(0,END)
+            customer_info.delete('1.0',END)
 
     submit_btn = Button(file_add_frame, text='Save',font=('Helvetica', 10),command=submit)
     submit_btn.grid(row=8,column=2,pady=(10, 0), padx=7)
@@ -203,46 +214,52 @@ def update():
     cur_sor = conn.cursor()
     record_id = customer_name.get()
     current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cur_sor.execute(""" UPDATE customer SET 
-        name= :name,
-        date = :date,
-        link_one = :link_one,
-        link_two = :link_two,
-        ftp_link = :ftp_link,
-        ftp_username = :ftp_username,
-        frp_password = :ftp_pass,
-        info = :notes,
-        modifydate = current_date
-        WHERE name = :name""",
+    try:
 
-                    {
-                        'name':customer_name.get(),
-                        'date':customer_date.get(),
-                        'link_one':customer_link1.get(),
-                        'link_two':customer_link2.get(),
-                        'ftp_link':customer_ftp_link.get(),
-                        'ftp_username':customer_ftp_username.get(),
-                        'ftp_pass':customer_ftp_pass.get(),
-                        'notes':customer_info.get(),
-                        'modifydate':current_date
-                        }
-                    )
+        cur_sor.execute(""" UPDATE customer SET 
+            name= :name,
+            date = :date,
+            link_one = :link_one,
+            link_two = :link_two,
+            ftp_link = :ftp_link,
+            ftp_username = :ftp_username,
+            frp_password = :ftp_pass,
+            info = :notes,
+            modifydate = current_date
+            WHERE name = :name""",
+
+                        {
+                            'name':customer_name.get(),
+                            'date':customer_date.get(),
+                            'link_one':customer_link1.get(),
+                            'link_two':customer_link2.get(),
+                            'ftp_link':customer_ftp_link.get(),
+                            'ftp_username':customer_ftp_username.get(),
+                            'ftp_pass':customer_ftp_pass.get(),
+                            'notes':customer_info.get("1.0",'end-1c'),
+                            'modifydate' :current_date
+                            }
+                        )
 
 
-    # Commit changes
-    conn.commit()
-    # Close connection
-    conn.close()
-    #editor.destroy()
-    # Clear text boxes
-    customer_name.delete(0, END)
-    customer_date.delete(0, END)
-    customer_link1.delete(0, END)
-    customer_link2.delete(0, END)
-    customer_ftp_link.delete(0, END)
-    customer_ftp_username.delete(0, END)
-    customer_ftp_pass.delete(0, END)
-    customer_info.delete(0, END)
+        # Commit changes
+        conn.commit()
+        messagebox.showinfo("Success", "Record updated successfully")
+    except sqlite3.Error as e:
+        messagebox.showerror("Error", f"An error occurred: {e}")
+    finally:
+        # Close connection
+        conn.close()
+        #editor.destroy()
+        # Clear text boxes
+        customer_name.delete(0, END)
+        customer_date.delete(0, END)
+        customer_link1.delete(0, END)
+        customer_link2.delete(0, END)
+        customer_ftp_link.delete(0, END)
+        customer_ftp_username.delete(0, END)
+        customer_ftp_pass.delete(0, END)
+        customer_info.delete('1.0', END)
 
 def edit():
     hide_all_frame()
@@ -313,7 +330,7 @@ def edit():
 
     customer_info_lbl = Label(edit_edit_frame, text='Notes: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
     customer_info_lbl.grid(row=7, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_info = Entry(edit_edit_frame, width=70)
+    customer_info = Text(edit_edit_frame,height=5, width=52)
     customer_info.grid(row=7, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # For loop thru retults
@@ -325,7 +342,7 @@ def edit():
         customer_ftp_link.insert(0, record[4])
         customer_ftp_username.insert(0, record[5])
         customer_ftp_pass.insert(0, record[6])
-        customer_info.insert(0, record[7])
+        customer_info.insert('1.0', record[7])
 
 
 
@@ -344,26 +361,26 @@ def edit():
 
     # Create query function
 def show():
-    global find
-    show = Tk()
-    show.title('Show Record')
-    show.geometry('600x600')
+
     # Create database connection
     conn = sqlite3.connect('customer_book.db')
         # Create cursor
     cur_sor = conn.cursor()
 
-    #customer_name = find.get()
-    # Query the database
-    #cur_sor.execute("SELECT *, oid FROM customer")
-    cur_sor.execute("SELECT * FROM customer where name like ?COLLATE NOCASE", ('%' + z.get() + '%',)) # % used to find customer information with wild card search
+    cur_sor.execute("SELECT * from customer where name like ?COLLATE NOCASE", ('%' + z.get() + '%',)) # % used to find customer information with wild card search
     records = cur_sor.fetchall()
+    if not records:
+        messagebox.showinfo("No Records", "No matching records found.")
+        return  # Do not proceed to show window
 
-
+    global find
+    show_window = Tk()
+    show_window.title('Show Record')
+    show_window.geometry('600x600')
     # print(records)
-    name_lbl = Label(show, text='Customer name:')
+    name_lbl = Label(show_window, text='Customer name:')
     name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7,sticky='w')
-    name = Entry(show, width=60)
+    name = Entry(show_window, width=60)
     name.grid(row=0, column=2, pady=(10, 0), padx=7,sticky='w')
     '''
     date_lbl = Label(show, text='Date:')
@@ -371,58 +388,59 @@ def show():
     date = Entry(show, width=50)
     date.grid(row=1, column=2, pady=(10, 0), padx=7,sticky='w')
     '''
-    link1_lbl = Label(show, text='Link TCS2:')
+    link1_lbl = Label(show_window, text='Link TCS2:')
     link1_lbl.grid(row=2, column=1, pady=(10, 0), padx=7,sticky='w')
-    link1 = Entry(show, width=60)
+    link1 = Entry(show_window, width=60)
     link1.grid(row=2, column=2, pady=(10, 0), padx=7,sticky='w')
 
-    link2_lbl = Label(show, text='Link TCS3:')
+    link2_lbl = Label(show_window, text='Link TCS3:')
     link2_lbl.grid(row=3, column=1, pady=(10, 0), padx=7,sticky='w')
-    link2 = Entry(show, width=60)
+    link2 = Entry(show_window, width=60)
     link2.grid(row=3, column=2, pady=(10, 0), padx=7,sticky='w')
 
-    ftp_lbl = Label(show, text='FTP link:')
+    ftp_lbl = Label(show_window, text='FTP link:')
     ftp_lbl.grid(row=4, column=1, pady=(10, 0), padx=7, sticky='w')
-    ftp = Entry(show, width=60)
+    ftp = Entry(show_window, width=60)
     ftp.grid(row=4, column=2, pady=(10, 0), padx=7, sticky='w')
 
-    ftp_user_lbl = Label(show, text='FTP User name:')
+    ftp_user_lbl = Label(show_window, text='FTP User name:')
     ftp_user_lbl.grid(row=5, column=1, pady=(10, 0), padx=7, sticky='w')
-    ftp_user = Entry(show, width=60)
+    ftp_user = Entry(show_window, width=60)
     ftp_user.grid(row=5, column=2, pady=(10, 0), padx=7, sticky='w')
 
-    ftp_pass_lbl = Label(show, text='FTP Password:')
+    ftp_pass_lbl = Label(show_window, text='FTP Password:')
     ftp_pass_lbl.grid(row=6, column=1, pady=(10, 0), padx=7, sticky='w')
-    ftp_pass = Entry(show, width=60)
+    ftp_pass = Entry(show_window, width=60)
     ftp_pass.grid(row=6, column=2, pady=(10, 0), padx=7, sticky='w')
 
-    info_lbl = Label(show, text='Info:')
+    info_lbl = Label(show_window, text='Info:')
     info_lbl.grid(row=7, column=1, pady=(10, 0), padx=7, sticky='w')
-    info =Entry(show,width=60)
+    info =Text(show_window,height=15,width=45)
     #info.grid(row=7, column=2, pady=(10, 0), padx=7, sticky='w')
     info.grid(row=7, column=2, pady=(10, 0),ipady=20, padx=7, sticky='w')
 
-    close = Button(show, text='Exit', command = show.destroy)
+    close = Button(show_window, text='Exit', command = show_window.destroy)
     close.grid(row=10, column=2, pady=(10, 0), padx=20)
 
-    for record in records:
-        name.insert(0,record[0])
-        #date.insert(0,record[1])
-        link1.insert(0,record[2])
-        link2.insert(0,record[3])
-        ftp.insert(0,record[4])
-        ftp_user.insert(0,record[5])
-        ftp_pass.insert(0,record[6])
-        info.insert(0,record[7])
+    if records:
 
-    '''
-# Loop through results
-    print_records = ''
-    for record in records:
-        print_records += str(record[0]) +'\n' " " + str(record[2]) + '\n' " " + str(record[1]) + str(record[3]) + str(record[4]) +str(record[5])  +"\t" + str(record[7]) + '\n'
-    query_lbl = Label(show, text = print_records)
-    query_lbl.grid(row=0,column=2,pady = 10, padx=(100,100))
-    '''
+        for record in records:
+            name.delete(0, END)
+            name.insert(0, record[0])
+            link1.delete(0, END)
+            link1.insert(0, record[2])
+            link2.delete(0, END)
+            link2.insert(0, record[3])
+            ftp.delete(0, END)
+            ftp.insert(0, record[4])
+            ftp_user.delete(0, END)
+            ftp_user.insert(0, record[5])
+            ftp_pass.delete(0, END)
+            ftp_pass.insert(0, record[6])
+            info.delete('1.0', END)
+            info.insert('1.0', record[7])
+
+
     # Commit changes
     conn.commit()
 
