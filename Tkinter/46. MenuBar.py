@@ -3,13 +3,14 @@ from tkinter import *
 from tkcalendar import *
 from datetime import datetime
 from tkinter import messagebox
-import sqlite3
+
 
 from tkcalendar import Calendar
 from tkinter import ttk
 
 
 import  sqlite3
+import os
 customtkinter.set_appearance_mode('dark')
 customtkinter.set_default_color_theme('dark-blue')
 
@@ -20,34 +21,60 @@ root.geometry("800x600")
 my_menu = Menu(root)
 root.config(menu=my_menu)
 
-#Create database or connect to one
-conn =sqlite3.connect('customer_book.db')
+# Define the database name
+db_name = 'customer_book.db'
 
-#Create cursor
-c = conn.cursor()
+# Function to check if a table exists
+def table_exists(cursor, table_name):
+    cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';")
+    return cursor.fetchone() is not None
 
-'''
-#Create table
+# Check if the database file exists
+if not os.path.exists(db_name):
+    # Create the database if it doesn't exist
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
 
-c.execute("""CREATE TABLE customer (
-            name text,
-            date text,
-            link_one text,
-            link_two text,
-            ftp_link text,
-            ftp_username text,
-            frp_password text,
-            info text,
-            modifydate text
-            
-            )""")
-'''
-#Commit changes
-conn.commit()
+    # Create the table
+    c.execute("""CREATE TABLE customer (
+                name text,
+                date text,
+                link_one text,
+                link_two text,
+                ftp_link text,
+                ftp_username text,
+                frp_password text,
+                info text,
+                modifydate text
+                )""")
 
-#Close connection
+    conn.commit()
+    print("Database and table created.")
+else:
+    # If the database exists, check for the table
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+
+    if not table_exists(c, "customer"):
+        # If the table doesn't exist, create it
+        c.execute("""CREATE TABLE customer (
+                    name text,
+                    date text,
+                    link_one text,
+                    link_two text,
+                    ftp_link text,
+                    ftp_username text,
+                    frp_password text,
+                    info text,
+                    modifydate text
+                    )""")
+        conn.commit()
+        print("Table created in existing database.")
+    else:
+        print("Table already exists, skipping creation.")
+
+# Close the connection
 conn.close()
-
 # Create query function
 '''
 #Create find
