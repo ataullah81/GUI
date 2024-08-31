@@ -3,19 +3,17 @@ from tkinter import *
 from tkcalendar import *
 from datetime import datetime
 from tkinter import messagebox
-
-
-from tkcalendar import Calendar
-from tkinter import ttk
-
-
-import  sqlite3
+import sqlite3
 import os
+from random import randint
+import tkinter.messagebox
+
+
 customtkinter.set_appearance_mode('dark')
 customtkinter.set_default_color_theme('dark-blue')
 
 root = customtkinter.CTk()
-root.title('Menu Bar')
+root.title('Customer Info Box')
 root.geometry("800x600")
 
 my_menu = Menu(root)
@@ -25,11 +23,15 @@ root.config(menu=my_menu)
 db_name = 'customer_book.db'
 
 # Function to check if a table exists
+
+
 def table_exists(cursor, table_name):
     cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';")
     return cursor.fetchone() is not None
 
 # Check if the database file exists
+
+
 if not os.path.exists(db_name):
     # Create the database if it doesn't exist
     conn = sqlite3.connect(db_name)
@@ -97,18 +99,24 @@ def find_customer():
 
 '''
 # Click command
+
+
 def our_command():
     pass
+
+
 def about():
-    about_window= Tk()
+    about_window = Tk()
     about_window.title('About')
     about_window.geometry('300x200')
     lbl = Label(about_window, text='Copyright ©arbrtech. All Rights Reserved', fg='white', bg='#36454F')
     lbl.pack(pady=90, anchor='s')
-    #lbl.grid(row=10, column=2, pady=(10, 0), padx=20)
+    # lbl.grid(row=10, column=2, pady=(10, 0), padx=20)
+
+
 def find():
     hide_all_frame()
-    find_window=Tk()
+    find_window = Tk()
     find_window.title('Find customer')
     find_window.geometry()
     find_lbl = customtkinter.CTkLabel(find_window, text='Find Customer')
@@ -125,7 +133,9 @@ def find():
     find.pack(pady=10)
     btn_query = Button(find_window, text='Show records', command=show)
     btn_query.pack()
-#File add neew function
+# File add neew function
+
+
 def add_new():
     hide_all_frame()
     file_add_frame.pack(pady=20, padx= 60, fill='both', expand=True)
@@ -141,7 +151,7 @@ def add_new():
     global customer_info
 
 
-    customer_name_lbl = Label(file_add_frame, text='Customer name: ',font=('Helvetica',10),bg='gray')
+    customer_name_lbl = Label(file_add_frame, text='Customer name: ' , font=('Helvetica' ,10),bg='gray')
     customer_name_lbl.grid(row=0, column=1,pady=(10, 0), padx=7,sticky='w')
     customer_name = Entry(file_add_frame, width=50)
     customer_name.grid(row=0, column=2, pady=(10, 0), padx=7,sticky='w')
@@ -231,7 +241,10 @@ def hide_all_frame():
     file_add_frame.pack_forget()
     edit_edit_frame.pack_forget()
     edit_delete_frame.pack_forget()
+    password_frame.pack_forget()
+
     main_frame.pack_forget()
+
 
 
 #Update function
@@ -523,6 +536,69 @@ def fetch():
 
 
 
+def password():
+    hide_all_frame()
+    # create global variables for text boxes
+    #global customer_name
+    # If password_frame already has children, destroy them
+    for widget in password_frame.winfo_children():
+        widget.destroy()
+
+    password_frame.pack(pady=20, padx=60, fill='both', expand=True)
+
+    def random():
+
+        # Clear entry box
+        pw_entry.delete(0, END)
+        # Get password length and convert to integer
+        pw_length = int(my_entry.get())
+        # create a variable to hold password
+        my_password = ''
+
+        # Loop through password length
+        for x in range(pw_length):
+            my_password += chr(randint(33, 126))
+
+        # Output password to the screen
+        pw_entry.insert(0, my_password)
+
+    # Copy to clipboard
+    def clipping():
+
+        # Clear the clipborad
+        password_frame.clipboard_clear()
+        # Copy to clipborad
+        password_frame.clipboard_append(pw_entry.get())
+        tkinter.messagebox.showinfo('', 'Password copied')
+
+    lf = LabelFrame(password_frame, text='Choose Length of Password')
+    lf.pack(pady=20)
+    #password_frame.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
+    my_entry = Spinbox(lf, from_=5, to=25, font=('Helvetica', 24))
+    my_entry.pack(pady=20, padx=20)
+    lf2 = LabelFrame(password_frame, text='Generated Password', bd=5)
+    lf2.pack()
+    pw_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='systembuttonface')
+    pw_entry.pack(pady=(0, 20))
+    # Label Frame
+    # Create our buttons
+# Create frame for our buttons
+    my_frame = Frame(password_frame)
+    my_frame.pack(pady=20)
+    my_button = Button(my_frame, text='Generate Strong Password', command=random)
+    my_button.grid(row=0, column=0, padx=10)
+
+    clip_button = Button(my_frame, text='Copy To Clipboard', command=clipping)
+    clip_button.grid(row=0, column=1, padx=10)
+
+
+
+
+
+
+
+
+
 #Create a  menu item
 file_menu = Menu(my_menu)
 my_menu.add_cascade(label="File", menu=file_menu)
@@ -545,6 +621,10 @@ option_menu.add_command(label="Find",command=find)
 #option_menu.add_command(label="Find Next",command=our_command)
 option_menu.add_command(label="About",command=about)
 
+# Create a password item
+password_menu = Menu(my_menu)
+my_menu.add_cascade(label="Password",menu=password_menu)
+password_menu.add_command(label="Generate Password",command=password)
 
 
 
@@ -555,6 +635,7 @@ main_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='
 file_add_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 edit_edit_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 edit_delete_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+password_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 
 find_lbl = customtkinter.CTkLabel(root,text = 'Find Customer')
 find_lbl.pack()
