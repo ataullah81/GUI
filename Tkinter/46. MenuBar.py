@@ -7,6 +7,9 @@ import sqlite3
 import os
 from random import randint
 import tkinter.messagebox
+import tkinter as tk
+from tkinter import Toplevel, StringVar, Entry, Button, Label, messagebox
+import babel.numbers
 
 
 customtkinter.set_appearance_mode('dark')
@@ -14,6 +17,9 @@ customtkinter.set_default_color_theme('dark-blue')
 
 root = customtkinter.CTk()
 root.title('Customer Info Box')
+# Use an absolute path to the icon file
+icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
+root.iconbitmap(icon_path)
 root.geometry("800x600")
 
 my_menu = Menu(root)
@@ -77,28 +83,132 @@ else:
 
 # Close the connection
 conn.close()
-# Create query function
-'''
-#Create find
-def find_customer():
-    hide_all_frame()
-    global find
-    main_frame.pack(pady=20, padx= 60, fill='both', expand=True)
-    find_lbl = Label(main_frame,text='Find Customer: ', font=('Helvetica', 10), bg='green')
-    find_lbl.grid(row=0,column=0,pady=(10, 0), padx=7, sticky='w')
-    #find_lbl.pack()
-    find = Entry(main_frame, width=50)
-    find.grid(row=0, column=2, pady=(10, 0), padx=7,sticky='w')
-    #find_customer.pack()
-    # create query button
 
+def search_window():
+    # Create a new Toplevel window
+    search_win = Toplevel()
+    search_win.title("Search and Edit Customer")
 
+    # Create a StringVar for the search entry
+    search_var = StringVar()
 
-    btn_query = Button(main_frame, text='Show records', command=show)
-    btn_query.grid(row=3, column=0, columnspan=2, pady=10, padx=10, ipadx=95)
+    # Create and place the widgets in the new window
+    search_label = Label(search_win, text="Enter Customer Name:", font=('Helvetica', 12))
+    search_label.grid(row=0, column=0, padx=10, pady=10)
 
-'''
-# Click command
+    search_entry = Entry(search_win, textvariable=search_var, width=30, font=('Helvetica', 12))
+    search_entry.grid(row=0, column=1, padx=10, pady=10)
+
+    search_button = Button(search_win, text="Search", command=lambda: perform_search(search_var.get(), search_win))
+    search_button.grid(row=0, column=2, padx=10, pady=10)
+
+    def perform_search(customer_name, win):
+        if not customer_name.strip():
+            messagebox.showwarning("Input Error", "Please enter a customer name.")
+            return
+
+        # Connect to the database and perform the search
+        conn = sqlite3.connect('customer_book.db')
+        cur_sor = conn.cursor()
+
+        cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + customer_name + '%',))
+        records = cur_sor.fetchall()
+
+        if not records:
+            messagebox.showinfo("No Results", "No customer found with that name.")
+            conn.close()
+            return
+
+        # Display the first record in editable fields
+        record = records[0]  # Edit the first matching record only for simplicity
+
+        # Labels and Entry widgets for editing
+        Label(win, text="Customer Name:", font=('Helvetica', 12)).grid(row=2, column=0, padx=10, pady=5, sticky='e')
+        name_entry = Entry(win, width=40, font=('Helvetica', 12))
+        name_entry.grid(row=2, column=1, padx=10, pady=5)
+        name_entry.insert(0, record[0])
+
+        Label(win, text="Date:", font=('Helvetica', 12)).grid(row=3, column=0, padx=10, pady=5, sticky='e')
+        date_entry = Entry(win, width=40, font=('Helvetica', 12))
+        date_entry.grid(row=3, column=1, padx=10, pady=5)
+        date_entry.insert(0, record[1])
+
+        Label(win, text="Link TCS2:", font=('Helvetica', 12)).grid(row=4, column=0, padx=10, pady=5, sticky='e')
+        link1_entry = Entry(win, width=40, font=('Helvetica', 12))
+        link1_entry.grid(row=4, column=1, padx=10, pady=5)
+        link1_entry.insert(0, record[2])
+
+        Label(win, text="Link TCS3:", font=('Helvetica', 12)).grid(row=5, column=0, padx=10, pady=5, sticky='e')
+        link2_entry = Entry(win, width=40, font=('Helvetica', 12))
+        link2_entry.grid(row=5, column=1, padx=10, pady=5)
+        link2_entry.insert(0, record[3])
+
+        Label(win, text="FTP Link:", font=('Helvetica', 12)).grid(row=6, column=0, padx=10, pady=5, sticky='e')
+        ftp_link_entry = Entry(win, width=40, font=('Helvetica', 12))
+        ftp_link_entry.grid(row=6, column=1, padx=10, pady=5)
+        ftp_link_entry.insert(0, record[4])
+
+        Label(win, text="FTP Username:", font=('Helvetica', 12)).grid(row=7, column=0, padx=10, pady=5, sticky='e')
+        ftp_username_entry = Entry(win, width=40, font=('Helvetica', 12))
+        ftp_username_entry.grid(row=7, column=1, padx=10, pady=5)
+        ftp_username_entry.insert(0, record[5])
+
+        Label(win, text="FTP Password:", font=('Helvetica', 12)).grid(row=8, column=0, padx=10, pady=5, sticky='e')
+        ftp_pass_entry = Entry(win, width=40, font=('Helvetica', 12))
+        ftp_pass_entry.grid(row=8, column=1, padx=10, pady=5)
+        ftp_pass_entry.insert(0, record[6])
+
+        Label(win, text="Notes:", font=('Helvetica', 12)).grid(row=9, column=0, padx=10, pady=5, sticky='ne')
+        notes_entry = tk.Text(win, width=40, height=4, font=('Helvetica', 12))
+        notes_entry.grid(row=9, column=1, padx=10, pady=5)
+        notes_entry.insert(tk.END, record[7])
+
+        def save_edits():
+
+            conn = sqlite3.connect('customer_book.db')
+            # Create cursor
+            cur_sor = conn.cursor()
+            # Update the record in the database with the new values
+            # Get the current date and time
+            modify_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            cur_sor.execute("""
+                UPDATE customer SET 
+                    name = ?, 
+                    date = ?, 
+                    link_one = ?, 
+                    link_two = ?, 
+                    ftp_link = ?, 
+                    ftp_username = ?, 
+                    frp_password = ?, 
+                    info = ?,
+                    MODIFYDATE = ?
+                WHERE name = ?
+            
+                
+            """, (
+                name_entry.get(),
+                date_entry.get(),
+                link1_entry.get(),
+                link2_entry.get(),
+                ftp_link_entry.get(),
+                ftp_username_entry.get(),
+                ftp_pass_entry.get(),
+                notes_entry.get("1.0", tk.END).strip(),  # Get the content of the Text widget
+                modify_date,  # Set the modify date to the current time
+                record[0]  # The original customer name to identify the record
+            ))
+
+            conn.commit()
+            messagebox.showinfo("Success", "Record updated successfully.")
+            conn.close()
+            win.destroy()  # Close the search window after saving
+
+        # Save button to update the record
+        save_button = Button(win, text="Save Changes", command=save_edits, font=('Helvetica', 12))
+        save_button.grid(row=10, column=0, columnspan=2, pady=10)
+
+        conn.close()
+
 
 
 def our_command():
@@ -113,27 +223,38 @@ def about():
     lbl.pack(pady=90, anchor='s')
     # lbl.grid(row=10, column=2, pady=(10, 0), padx=20)
 
-
+# Find function not in use
 def find():
     hide_all_frame()
-    find_window = Tk()
-    find_window.title('Find customer')
-    find_window.geometry()
+    find_window = tk.Tk()
+    find_window.title('Find Customer')
+    find_window.geometry('400x200')  # Specify a reasonable default size
+
     find_lbl = customtkinter.CTkLabel(find_window, text='Find Customer')
-    find_lbl.pack()
+    find_lbl.pack(pady=10)
+
     find = Entry(find_window, textvariable=z, width=50)
     find.insert(0, 'Enter customer name')
     find.configure(state='disabled')
 
-    def on_click(event):  # this function for place holder in entry box
+    def on_click(event):  # This function for placeholder in the entry box
         find.configure(state=NORMAL)
         find.delete(0, END)
 
+    def validate_and_show():
+        customer_name = z.get().strip()
+        if not customer_name:
+            messagebox.showwarning("Input Error", "Please enter a customer name.")
+            return
+        show()
+
     find.bind('<Button-1>', on_click)
     find.pack(pady=10)
-    btn_query = Button(find_window, text='Show records', command=show)
-    btn_query.pack()
-# File add neew function
+
+    btn_query = tk.Button(find_window, text='Show records', command=show)
+    btn_query.pack(pady=10)
+
+    find_window.mainloop()
 
 
 def add_new():
@@ -242,9 +363,7 @@ def hide_all_frame():
     edit_edit_frame.pack_forget()
     edit_delete_frame.pack_forget()
     password_frame.pack_forget()
-
     main_frame.pack_forget()
-
 
 
 #Update function
@@ -252,7 +371,7 @@ def update():
     conn = sqlite3.connect('customer_book.db')
     # Create cursor
     cur_sor = conn.cursor()
-    record_id = customer_name.get()
+    #record_id = customer_name.get()
     current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
 
@@ -301,142 +420,46 @@ def update():
         customer_ftp_pass.delete(0, END)
         customer_info.delete('1.0', END)
 
-def edit():
-    hide_all_frame()
-    # create global variables for text boxes
-    global customer_name
-    global customer_date
-    global customer_link1
-    global customer_link2
-    global customer_ftp_link
-    global customer_ftp_username
-    global customer_ftp_pass
-    global customer_info
-    edit_edit_frame.pack(pady=20, padx=60, fill='both', expand=True)
-
-    customer_name_lbl = Label(edit_edit_frame, text='Customer name: ', font=('Helvetica', 10), bg='gray')
-    customer_name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_name = Entry(edit_edit_frame, width=50)
-    customer_name.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
-
+def show():
+    # Check if the user input is empty
+    if not z.get().strip():
+        messagebox.showwarning("Input Error", "Please enter a customer name.")
+        return  # Exit the function if input is empty
 
     # Create database connection
     conn = sqlite3.connect('customer_book.db')
     # Create cursor
     cur_sor = conn.cursor()
 
-    #record_ID = customer_name.get()
-    # Query the database
-    #cur_sor.execute("SELECT * FROM addresses where oid = " + record_ID)
-    cur_sor.execute("SELECT * FROM customer where name like ?COLLATE NOCASE", ('%' + z.get() + '%',))
+    # Execute the query with the provided customer name
+    cur_sor.execute("SELECT * from customer WHERE name LIKE ? COLLATE NOCASE", ('%' + z.get().strip() + '%',))  # % used to find customer information with wild card search
     records = cur_sor.fetchall()
 
-
-
-    # Create text boxes
-
-
-    customer_date_lbl = Label(edit_edit_frame, text='Date: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
-    customer_date_lbl.grid(row=1, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_date = DateEntry(edit_edit_frame, date_pattern='dd-mm-yyyy')
-    customer_date.grid(row=1, column=2, pady=(10, 0), padx=7, sticky='w')
-
-    customer_link1_lbl = Label(edit_edit_frame, text='Link TCS2: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
-    customer_link1_lbl.grid(row=2, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_link1 = Entry(edit_edit_frame, width=70)
-    customer_link1.grid(row=2, column=2, pady=(10, 0), padx=7, sticky='w')
-
-    customer_link2_lbl = Label(edit_edit_frame, text='Link TCS3: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
-    customer_link2_lbl.grid(row=3, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_link2 = Entry(edit_edit_frame, width=70)
-    customer_link2.grid(row=3, column=2, pady=(10, 0), padx=7, sticky='w')
-
-    customer_ftp_link_lbl = Label(edit_edit_frame, text='FTP Link: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
-    customer_ftp_link_lbl.grid(row=4, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_ftp_link = Entry(edit_edit_frame, width=70)
-    customer_ftp_link.grid(row=4, column=2, pady=(10, 0), padx=7, sticky='w')
-
-    customer_ftp_username_lbl = Label(edit_edit_frame, text='FTP username: ', font=('Helvetica', 10), bg='gray',
-                                      justify=LEFT)
-    customer_ftp_username_lbl.grid(row=5, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_ftp_username = Entry(edit_edit_frame, width=70)
-    customer_ftp_username.grid(row=5, column=2, pady=(10, 0), padx=7, sticky='w')
-
-    customer_ftp_pass_lbl = Label(edit_edit_frame, text='FTP password: ', font=('Helvetica', 10), bg='gray',
-                                  justify=LEFT)
-    customer_ftp_pass_lbl.grid(row=6, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_ftp_pass = Entry(edit_edit_frame, width=70)
-    customer_ftp_pass.grid(row=6, column=2, pady=(10, 0), padx=7, sticky='w')
-
-    customer_info_lbl = Label(edit_edit_frame, text='Notes: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
-    customer_info_lbl.grid(row=7, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_info = Text(edit_edit_frame,height=5, width=52)
-    customer_info.grid(row=7, column=2, pady=(10, 0), padx=7, sticky='w')
-
-    # For loop thru retults
-    for record in records:
-        customer_name.insert(0, record[0])
-        # customer_date.insert(0,record[1])
-        customer_link1.insert(0, record[2])
-        customer_link2.insert(0, record[3])
-        customer_ftp_link.insert(0, record[4])
-        customer_ftp_username.insert(0, record[5])
-        customer_ftp_pass.insert(0, record[6])
-        customer_info.insert('1.0', record[7])
-
-
-
-    # Save edited record
-    save_btn = Button(edit_edit_frame, text='Save Record', command=update)
-    save_btn.grid(row=8, column=2, columnspan=2, pady=10, padx=10, ipadx=95)
-
-    # Commit changes
-    conn.commit()
-
-    # Close connection
-    conn.close()
-
-
-   # print(records)
-
-    # Create query function
-def show():
-
-    # Create database connection
-    conn = sqlite3.connect('customer_book.db')
-        # Create cursor
-    cur_sor = conn.cursor()
-
-    cur_sor.execute("SELECT * from customer where name like ?COLLATE NOCASE", ('%' + z.get() + '%',)) # % used to find customer information with wild card search
-    records = cur_sor.fetchall()
     if not records:
         messagebox.showinfo("No Records", "No matching records found.")
+        conn.close()
         return  # Do not proceed to show window
 
     global find
     show_window = Tk()
     show_window.title('Show Record')
     show_window.geometry('600x600')
-    # print(records)
+
+    # Create and place widgets to display the customer information
     name_lbl = Label(show_window, text='Customer name:')
-    name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7,sticky='w')
+    name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
     name = Entry(show_window, width=60)
-    name.grid(row=0, column=2, pady=(10, 0), padx=7,sticky='w')
-    '''
-    date_lbl = Label(show, text='Date:')
-    date_lbl.grid(row=1, column=1, pady=(10, 0), padx=7,sticky='w')
-    date = Entry(show, width=50)
-    date.grid(row=1, column=2, pady=(10, 0), padx=7,sticky='w')
-    '''
+    name.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
+
     link1_lbl = Label(show_window, text='Link TCS2:')
-    link1_lbl.grid(row=2, column=1, pady=(10, 0), padx=7,sticky='w')
+    link1_lbl.grid(row=2, column=1, pady=(10, 0), padx=7, sticky='w')
     link1 = Entry(show_window, width=60)
-    link1.grid(row=2, column=2, pady=(10, 0), padx=7,sticky='w')
+    link1.grid(row=2, column=2, pady=(10, 0), padx=7, sticky='w')
 
     link2_lbl = Label(show_window, text='Link TCS3:')
-    link2_lbl.grid(row=3, column=1, pady=(10, 0), padx=7,sticky='w')
+    link2_lbl.grid(row=3, column=1, pady=(10, 0), padx=7, sticky='w')
     link2 = Entry(show_window, width=60)
-    link2.grid(row=3, column=2, pady=(10, 0), padx=7,sticky='w')
+    link2.grid(row=3, column=2, pady=(10, 0), padx=7, sticky='w')
 
     ftp_lbl = Label(show_window, text='FTP link:')
     ftp_lbl.grid(row=4, column=1, pady=(10, 0), padx=7, sticky='w')
@@ -455,37 +478,27 @@ def show():
 
     info_lbl = Label(show_window, text='Info:')
     info_lbl.grid(row=7, column=1, pady=(10, 0), padx=7, sticky='w')
-    info =Text(show_window,height=15,width=45)
-    #info.grid(row=7, column=2, pady=(10, 0), padx=7, sticky='w')
-    info.grid(row=7, column=2, pady=(10, 0),ipady=20, padx=7, sticky='w')
+    info = Text(show_window, height=15, width=45)
+    info.grid(row=7, column=2, pady=(10, 0), ipady=20, padx=7, sticky='w')
 
-    close = Button(show_window, text='Exit', command = show_window.destroy)
+    close = Button(show_window, text='Exit', command=show_window.destroy)
     close.grid(row=10, column=2, pady=(10, 0), padx=20)
 
+    # Insert the retrieved records into the fields
     if records:
+        record = records[0]  # Assuming you're only showing the first matching record
+        name.insert(0, record[0])
+        link1.insert(0, record[2])
+        link2.insert(0, record[3])
+        ftp.insert(0, record[4])
+        ftp_user.insert(0, record[5])
+        ftp_pass.insert(0, record[6])
+        info.insert('1.0', record[7])
 
-        for record in records:
-            name.delete(0, END)
-            name.insert(0, record[0])
-            link1.delete(0, END)
-            link1.insert(0, record[2])
-            link2.delete(0, END)
-            link2.insert(0, record[3])
-            ftp.delete(0, END)
-            ftp.insert(0, record[4])
-            ftp_user.delete(0, END)
-            ftp_user.insert(0, record[5])
-            ftp_pass.delete(0, END)
-            ftp_pass.insert(0, record[6])
-            info.delete('1.0', END)
-            info.insert('1.0', record[7])
-
-
-    # Commit changes
+    # Commit changes and close connection
     conn.commit()
-
-    # Close connection
     conn.close()
+
 
 z = StringVar()
 y = StringVar()
@@ -493,47 +506,60 @@ y = StringVar()
 
 def fetch():
     hide_all_frame()
-    # create global variables for text boxes
-    #global customer_name
 
     edit_delete_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
-    customer_name_lbl = Label(edit_delete_frame, text='Customer name: ', font=('Helvetica', 10), bg='gray')
+    customer_name_lbl = tk.Label(edit_delete_frame, text='Customer name: ', font=('Helvetica', 10), bg='gray')
     customer_name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
-    del_customer_name = Entry(edit_delete_frame,textvariable=y,  width=50)
+
+    del_customer_name = tk.Entry(edit_delete_frame, textvariable=y, width=50)
     del_customer_name.insert(0, 'Enter customer name')
     del_customer_name.configure(state='disabled')
 
-    def on_click(event):  # this function for place holder in entry box
-
-        del_customer_name.configure(state=NORMAL)
-        del_customer_name.delete(0, END)
+    def on_click(event):  # This function for placeholder in entry box
+        del_customer_name.configure(state=tk.NORMAL)
+        del_customer_name.delete(0, tk.END)
 
     del_customer_name.bind('<Button-1>', on_click)
     del_customer_name.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
 
     def delete():
+        customer_name = y.get()
 
-        conn = sqlite3.connect('customer_book.db')
+        if not customer_name:
+            messagebox.showwarning("Input Error", "Please enter a customer name.")
+            return
 
-        # Create cursor
-        cur_sor = conn.cursor()
-        # Delete a record
-        cur_sor.execute("delete FROM customer where name like ?COLLATE NOCASE", ('%' + y.get() + '%',))
+        # Confirmation window
+        confirm = messagebox.askyesno("Delete Confirmation",
+                                      f"Are you sure you want to delete customer '{customer_name}'?")
 
-        # Commit changes
-        conn.commit()
-        # Close connection
-        conn.close()
-        # del_customer_name.delete(0, END)
-        del_customer_name.delete(0, END)
-    # delete record
-    delete_btn = Button(edit_delete_frame, text='Delete', command=delete)
+        if confirm:  # If user clicks "Yes"
+            try:
+                conn = sqlite3.connect('customer_book.db')
+                cur_sor = conn.cursor()
+
+                # Delete a record with an exact match
+                cur_sor.execute("DELETE FROM customer WHERE name = ? COLLATE NOCASE", (customer_name,))  # Exact match
+
+                # Commit changes
+                conn.commit()
+
+                # Clear the input field
+                del_customer_name.delete(0, tk.END)
+
+                messagebox.showinfo("Success", f"Customer '{customer_name}' deleted successfully.")
+
+            except sqlite3.Error as e:
+                messagebox.showerror("Database Error", f"An error occurred: {e}")
+
+            finally:
+                # Close connection
+                conn.close()
+
+    # Delete record button
+    delete_btn = tk.Button(edit_delete_frame, text='Delete', command=delete)
     delete_btn.grid(row=8, column=2, columnspan=2, pady=10, padx=10, ipadx=95)
-
-
-
-
 
 
 def password():
@@ -571,32 +597,26 @@ def password():
         password_frame.clipboard_append(pw_entry.get())
         tkinter.messagebox.showinfo('', 'Password copied')
 
-    lf = LabelFrame(password_frame, text='Choose Length of Password')
+    lf = LabelFrame(password_frame, text='Choose Length of Password',bg='gray')
     lf.pack(pady=20)
     #password_frame.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
-    my_entry = Spinbox(lf, from_=5, to=25, font=('Helvetica', 24))
+    my_entry = Spinbox(lf, from_=5, to=25, font=('Helvetica', 24),bg='gray')
     my_entry.pack(pady=20, padx=20)
-    lf2 = LabelFrame(password_frame, text='Generated Password', bd=5)
+    lf2 = LabelFrame(password_frame, text='Generated Password', bd=5,bg='gray')
     lf2.pack()
-    pw_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='systembuttonface')
+    # pw_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='systembuttonface')
+    pw_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='gray')
     pw_entry.pack(pady=(0, 20))
     # Label Frame
     # Create our buttons
 # Create frame for our buttons
-    my_frame = Frame(password_frame)
+    my_frame = Frame(password_frame,bg='gray')
     my_frame.pack(pady=20)
-    my_button = Button(my_frame, text='Generate Strong Password', command=random)
+    my_button = Button(my_frame, text='Generate Strong Password',bg='green', command=random)
     my_button.grid(row=0, column=0, padx=10)
 
-    clip_button = Button(my_frame, text='Copy To Clipboard', command=clipping)
+    clip_button = Button(my_frame, text='Copy To Clipboard',bg='green', command=clipping)
     clip_button.grid(row=0, column=1, padx=10)
-
-
-
-
-
-
-
 
 
 #Create a  menu item
@@ -611,23 +631,20 @@ file_menu.add_command(label="Exit",command=root.quit)
 # Create a menu item
 edit_menu = Menu(my_menu)
 my_menu.add_cascade(label="Edit",menu=edit_menu)
-edit_menu.add_command(label="Edit Record",command=edit)
+edit_menu.add_command(label="Edit Record",command=search_window)
 edit_menu.add_command(label="Delete Record",command=fetch)
-
-# Create a Options item
-option_menu = Menu(my_menu)
-my_menu.add_cascade(label="Options",menu=option_menu)
-option_menu.add_command(label="Find",command=find)
-#option_menu.add_command(label="Find Next",command=our_command)
-option_menu.add_command(label="About",command=about)
 
 # Create a password item
 password_menu = Menu(my_menu)
 my_menu.add_cascade(label="Password",menu=password_menu)
 password_menu.add_command(label="Generate Password",command=password)
 
-
-
+# Create a Options item
+option_menu = Menu(my_menu)
+my_menu.add_cascade(label="Options",menu=option_menu)
+#option_menu.add_command(label="Find",command=find)
+#option_menu.add_command(label="Find Next",command=our_command)
+option_menu.add_command(label="About",command=about)
 
 
 # Create frame
@@ -649,20 +666,11 @@ find.bind('<Button-1>',on_click)
 find.pack(pady=10)
 btn_query = Button(root, text='Show records', command=show)
 btn_query.pack()
-btn_query = Button(root, text='Edit records', command=edit)
-btn_query.pack(pady=10)
+#btn_query = Button(root, text='Search-edit records', command=edit)
+#btn_query.pack(pady=10)
 
-'''
-lbl = Label(root, text='©arbrtech',fg='white',bg='#36454F')
-lbl.pack(pady=235,anchor='s')
-#lbl.grid(row=10, column=2, pady=(10, 0), padx=20)
-'''
-'''
-find_lbl = customtkinter.CTkLabel(root,text='Find Customer: ', font=('Helvetica', 20))
-find_lbl.grid(row=0,column=0,pady=(10, 0), padx=7, sticky='w')
-find = Entry(root, width=50)
-find.grid(row=0, column=2, pady=(10, 0), padx=7,sticky='w')
-btn_query = Button(root, text='Show records', command=show)
-btn_query.grid(row=3, column=0, columnspan=2, pady=10, padx=10, ipadx=95)
-'''
+search_btn = Button(root, text="Edit Customer", command=search_window)
+search_btn.pack(pady=20)
+
+
 root.mainloop()
