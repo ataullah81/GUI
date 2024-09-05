@@ -22,6 +22,7 @@ icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
 root.iconbitmap(icon_path)
 root.geometry("800x600")
 
+
 my_menu = Menu(root)
 root.config(menu=my_menu)
 
@@ -84,6 +85,11 @@ else:
 # Close the connection
 conn.close()
 
+import tkinter as tk
+from tkinter import Toplevel, StringVar, Entry, Label, Button, messagebox
+from datetime import datetime
+import sqlite3
+
 def search_window():
     # Create a new Toplevel window
     search_win = Toplevel()
@@ -119,58 +125,103 @@ def search_window():
             conn.close()
             return
 
-        # Display the first record in editable fields
-        record = records[0]  # Edit the first matching record only for simplicity
+        global current_record_index
+        current_record_index = 0
+        total_records = len(records)
+
+        def display_record(index):
+            """ Display the customer data in the entry fields """
+            record = records[index]
+            name_entry.delete(0, tk.END)
+            name_entry.insert(0, record[0])
+            date_entry.delete(0, tk.END)
+            date_entry.insert(0, record[1])
+            link1_entry.delete(0, tk.END)
+            link1_entry.insert(0, record[2])
+            link2_entry.delete(0, tk.END)
+            link2_entry.insert(0, record[3])
+            ftp_link_entry.delete(0, tk.END)
+            ftp_link_entry.insert(0, record[4])
+            ftp_username_entry.delete(0, tk.END)
+            ftp_username_entry.insert(0, record[5])
+            ftp_pass_entry.delete(0, tk.END)
+            ftp_pass_entry.insert(0, record[6])
+            notes_entry.delete('1.0', tk.END)
+            notes_entry.insert(tk.END, record[7])
+
+            # Update the status label to show the current record number and total records
+            status_label.config(text=f"Record {index + 1} of {total_records}")
+
+        def next_record():
+            """ Show the next record """
+            global current_record_index
+            if current_record_index < total_records - 1:
+                current_record_index += 1
+                display_record(current_record_index)
+
+        def prev_record():
+            """ Show the previous record """
+            global current_record_index
+            if current_record_index > 0:
+                current_record_index -= 1
+                display_record(current_record_index)
 
         # Labels and Entry widgets for editing
         Label(win, text="Customer Name:", font=('Helvetica', 12)).grid(row=2, column=0, padx=10, pady=5, sticky='e')
         name_entry = Entry(win, width=40, font=('Helvetica', 12))
         name_entry.grid(row=2, column=1, padx=10, pady=5)
-        name_entry.insert(0, record[0])
 
         Label(win, text="Date:", font=('Helvetica', 12)).grid(row=3, column=0, padx=10, pady=5, sticky='e')
         date_entry = Entry(win, width=40, font=('Helvetica', 12))
         date_entry.grid(row=3, column=1, padx=10, pady=5)
-        date_entry.insert(0, record[1])
 
         Label(win, text="Link TCS2:", font=('Helvetica', 12)).grid(row=4, column=0, padx=10, pady=5, sticky='e')
         link1_entry = Entry(win, width=40, font=('Helvetica', 12))
         link1_entry.grid(row=4, column=1, padx=10, pady=5)
-        link1_entry.insert(0, record[2])
 
         Label(win, text="Link TCS3:", font=('Helvetica', 12)).grid(row=5, column=0, padx=10, pady=5, sticky='e')
         link2_entry = Entry(win, width=40, font=('Helvetica', 12))
         link2_entry.grid(row=5, column=1, padx=10, pady=5)
-        link2_entry.insert(0, record[3])
 
         Label(win, text="FTP Link:", font=('Helvetica', 12)).grid(row=6, column=0, padx=10, pady=5, sticky='e')
         ftp_link_entry = Entry(win, width=40, font=('Helvetica', 12))
         ftp_link_entry.grid(row=6, column=1, padx=10, pady=5)
-        ftp_link_entry.insert(0, record[4])
 
         Label(win, text="FTP Username:", font=('Helvetica', 12)).grid(row=7, column=0, padx=10, pady=5, sticky='e')
         ftp_username_entry = Entry(win, width=40, font=('Helvetica', 12))
         ftp_username_entry.grid(row=7, column=1, padx=10, pady=5)
-        ftp_username_entry.insert(0, record[5])
 
         Label(win, text="FTP Password:", font=('Helvetica', 12)).grid(row=8, column=0, padx=10, pady=5, sticky='e')
         ftp_pass_entry = Entry(win, width=40, font=('Helvetica', 12))
         ftp_pass_entry.grid(row=8, column=1, padx=10, pady=5)
-        ftp_pass_entry.insert(0, record[6])
 
         Label(win, text="Notes:", font=('Helvetica', 12)).grid(row=9, column=0, padx=10, pady=5, sticky='ne')
         notes_entry = tk.Text(win, width=40, height=4, font=('Helvetica', 12))
         notes_entry.grid(row=9, column=1, padx=10, pady=5)
-        notes_entry.insert(tk.END, record[7])
+
+        # Create a Frame to hold both buttons and center them
+        button_frame = Frame(win)
+        button_frame.grid(row=11, column=0, columnspan=2)
+
+        # Navigation buttons - Previous and Next side by side in the Frame
+        prev_button = Button(button_frame, text="Previous", command=prev_record, font=('Helvetica', 12))
+        next_button = Button(button_frame, text="Next", command=next_record, font=('Helvetica', 12))
+
+        prev_button.pack(side=tk.LEFT, padx=10)
+        next_button.pack(side=tk.RIGHT, padx=10)
+
+        # Create a label to show the current record index and total records
+        status_label = Label(win, text=f"Record 1 of {total_records}", font=('Helvetica', 12))
+        status_label.grid(row=12, column=0, columnspan=2, padx=10, pady=10)
 
         def save_edits():
-
             conn = sqlite3.connect('customer_book.db')
-            # Create cursor
             cur_sor = conn.cursor()
-            # Update the record in the database with the new values
+
             # Get the current date and time
             modify_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            # Update the record in the database with the new values
             cur_sor.execute("""
                 UPDATE customer SET 
                     name = ?, 
@@ -180,11 +231,9 @@ def search_window():
                     ftp_link = ?, 
                     ftp_username = ?, 
                     frp_password = ?, 
-                    info = ?,
+                    info = ?, 
                     MODIFYDATE = ?
                 WHERE name = ?
-            
-                
             """, (
                 name_entry.get(),
                 date_entry.get(),
@@ -195,7 +244,7 @@ def search_window():
                 ftp_pass_entry.get(),
                 notes_entry.get("1.0", tk.END).strip(),  # Get the content of the Text widget
                 modify_date,  # Set the modify date to the current time
-                record[0]  # The original customer name to identify the record
+                records[current_record_index][0]  # The original customer name to identify the record
             ))
 
             conn.commit()
@@ -207,7 +256,12 @@ def search_window():
         save_button = Button(win, text="Save Changes", command=save_edits, font=('Helvetica', 12))
         save_button.grid(row=10, column=0, columnspan=2, pady=10)
 
+        # Display the first record by default
+        display_record(current_record_index)
+
         conn.close()
+
+# Assuming the root window is already created and there is a button to call search_window
 
 
 
@@ -419,7 +473,6 @@ def update():
         customer_ftp_username.delete(0, END)
         customer_ftp_pass.delete(0, END)
         customer_info.delete('1.0', END)
-
 def show():
     # Check if the user input is empty
     if not z.get().strip():
@@ -431,8 +484,8 @@ def show():
     # Create cursor
     cur_sor = conn.cursor()
 
-    # Execute the query with the provided customer name
-    cur_sor.execute("SELECT * from customer WHERE name LIKE ? COLLATE NOCASE", ('%' + z.get().strip() + '%',))  # % used to find customer information with wild card search
+    # Execute the query with the provided customer name (wildcard search)
+    cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + z.get().strip() + '%',))
     records = cur_sor.fetchall()
 
     if not records:
@@ -440,64 +493,114 @@ def show():
         conn.close()
         return  # Do not proceed to show window
 
-    global find
+    global current_record_index
+    current_record_index = 0  # Track the index of the current record displayed
+    total_records = len(records)  # Get the total number of matching records
+
+    def display_record(record):
+        """ Display the customer data in the entry fields """
+        name.delete(0, END)
+        name.insert(0, record[0])
+        link1.delete(0, END)
+        link1.insert(0, record[2])
+        link2.delete(0, END)
+        link2.insert(0, record[3])
+        ftp.delete(0, END)
+        ftp.insert(0, record[4])
+        ftp_user.delete(0, END)
+        ftp_user.insert(0, record[5])
+        ftp_pass.delete(0, END)
+        ftp_pass.insert(0, record[6])
+        info.delete('1.0', END)
+        info.insert('1.0', record[7])
+
+        # Update the status label to show the current record number and total records
+        status_label.config(text=f"Record {current_record_index + 1} of {total_records}")
+
+    def next_record():
+        """ Show the next record """
+        global current_record_index
+        if current_record_index < len(records) - 1:
+            current_record_index += 1
+            display_record(records[current_record_index])
+
+    def prev_record():
+        """ Show the previous record """
+        global current_record_index
+        if current_record_index > 0:
+            current_record_index -= 1
+            display_record(records[current_record_index])
+
+    # Create a new window to display the records
     show_window = Tk()
     show_window.title('Show Record')
     show_window.geometry('600x600')
 
     # Create and place widgets to display the customer information
-    name_lbl = Label(show_window, text='Customer name:')
-    name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
-    name = Entry(show_window, width=60)
-    name.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
+    main_frame = Frame(show_window)
+    main_frame.pack(pady=20)
 
-    link1_lbl = Label(show_window, text='Link TCS2:')
-    link1_lbl.grid(row=2, column=1, pady=(10, 0), padx=7, sticky='w')
-    link1 = Entry(show_window, width=60)
-    link1.grid(row=2, column=2, pady=(10, 0), padx=7, sticky='w')
+    name_lbl = Label(main_frame, text='Customer name:')
+    name_lbl.grid(row=0, column=0, pady=(10, 0), padx=7, sticky='e')
+    name = Entry(main_frame, width=60)
+    name.grid(row=0, column=1, pady=(10, 0), padx=7)
 
-    link2_lbl = Label(show_window, text='Link TCS3:')
-    link2_lbl.grid(row=3, column=1, pady=(10, 0), padx=7, sticky='w')
-    link2 = Entry(show_window, width=60)
-    link2.grid(row=3, column=2, pady=(10, 0), padx=7, sticky='w')
+    link1_lbl = Label(main_frame, text='Link TCS2:')
+    link1_lbl.grid(row=1, column=0, pady=(10, 0), padx=7, sticky='e')
+    link1 = Entry(main_frame, width=60)
+    link1.grid(row=1, column=1, pady=(10, 0), padx=7)
 
-    ftp_lbl = Label(show_window, text='FTP link:')
-    ftp_lbl.grid(row=4, column=1, pady=(10, 0), padx=7, sticky='w')
-    ftp = Entry(show_window, width=60)
-    ftp.grid(row=4, column=2, pady=(10, 0), padx=7, sticky='w')
+    link2_lbl = Label(main_frame, text='Link TCS3:')
+    link2_lbl.grid(row=2, column=0, pady=(10, 0), padx=7, sticky='e')
+    link2 = Entry(main_frame, width=60)
+    link2.grid(row=2, column=1, pady=(10, 0), padx=7)
 
-    ftp_user_lbl = Label(show_window, text='FTP User name:')
-    ftp_user_lbl.grid(row=5, column=1, pady=(10, 0), padx=7, sticky='w')
-    ftp_user = Entry(show_window, width=60)
-    ftp_user.grid(row=5, column=2, pady=(10, 0), padx=7, sticky='w')
+    ftp_lbl = Label(main_frame, text='FTP link:')
+    ftp_lbl.grid(row=3, column=0, pady=(10, 0), padx=7, sticky='e')
+    ftp = Entry(main_frame, width=60)
+    ftp.grid(row=3, column=1, pady=(10, 0), padx=7)
 
-    ftp_pass_lbl = Label(show_window, text='FTP Password:')
-    ftp_pass_lbl.grid(row=6, column=1, pady=(10, 0), padx=7, sticky='w')
-    ftp_pass = Entry(show_window, width=60)
-    ftp_pass.grid(row=6, column=2, pady=(10, 0), padx=7, sticky='w')
+    ftp_user_lbl = Label(main_frame, text='FTP User name:')
+    ftp_user_lbl.grid(row=4, column=0, pady=(10, 0), padx=7, sticky='e')
+    ftp_user = Entry(main_frame, width=60)
+    ftp_user.grid(row=4, column=1, pady=(10, 0), padx=7)
 
-    info_lbl = Label(show_window, text='Info:')
-    info_lbl.grid(row=7, column=1, pady=(10, 0), padx=7, sticky='w')
-    info = Text(show_window, height=15, width=45)
-    info.grid(row=7, column=2, pady=(10, 0), ipady=20, padx=7, sticky='w')
+    ftp_pass_lbl = Label(main_frame, text='FTP Password:')
+    ftp_pass_lbl.grid(row=5, column=0, pady=(10, 0), padx=7, sticky='e')
+    ftp_pass = Entry(main_frame, width=60)
+    ftp_pass.grid(row=5, column=1, pady=(10, 0), padx=7)
 
-    close = Button(show_window, text='Exit', command=show_window.destroy)
-    close.grid(row=10, column=2, pady=(10, 0), padx=20)
+    info_lbl = Label(main_frame, text='Info:')
+    info_lbl.grid(row=6, column=0, pady=(10, 0), padx=7, sticky='ne')
+    info = Text(main_frame, height=10, width=45)
+    info.grid(row=6, column=1, pady=(10, 0), padx=7)
 
-    # Insert the retrieved records into the fields
-    if records:
-        record = records[0]  # Assuming you're only showing the first matching record
-        name.insert(0, record[0])
-        link1.insert(0, record[2])
-        link2.insert(0, record[3])
-        ftp.insert(0, record[4])
-        ftp_user.insert(0, record[5])
-        ftp_pass.insert(0, record[6])
-        info.insert('1.0', record[7])
+    # Create a Frame to hold navigation buttons (Previous and Next) and center it
+    button_frame = Frame(main_frame)
+    button_frame.grid(row=7, column=0, columnspan=2, pady=(20, 0))
+
+    # Create Previous and Next buttons side by side in the button frame
+    prev_btn = Button(button_frame, text='Previous', command=prev_record)
+    next_btn = Button(button_frame, text='Next', command=next_record)
+
+    prev_btn.pack(side=LEFT, padx=20)
+    next_btn.pack(side=RIGHT, padx=20)
+
+    # Create a label to show the current record index and total records, centered
+    status_label = Label(main_frame, text=f"Record {current_record_index + 1} of {total_records}")
+    status_label.grid(row=8, column=0, columnspan=2, pady=(20, 10))
+
+    # Close button centered below the navigation buttons
+    close = Button(main_frame, text='Exit', command=show_window.destroy)
+    close.grid(row=9, column=0, columnspan=2, pady=(10, 0))
+
+    # Display the first record by default
+    display_record(records[current_record_index])
 
     # Commit changes and close connection
     conn.commit()
     conn.close()
+
 
 
 z = StringVar()
@@ -671,6 +774,7 @@ btn_query.pack()
 
 search_btn = Button(root, text="Edit Customer", command=search_window)
 search_btn.pack(pady=20)
-
+lbl = customtkinter.CTkLabel(root, text='©arbtech')
+lbl.pack(anchor='se')
 
 root.mainloop()

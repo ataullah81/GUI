@@ -90,6 +90,7 @@ compare_button.grid(row=3, column=2)
 # Result label
 result_label = customtkinter.CTkLabel(master=frame, text="", wraplength=300)
 result_label.grid(row=4, column=0, columnspan=3)
-
+lbl = Label(root, text='©arbtech')
+lbl.pack(anchor='se')
 # Start the Tkinter event loop
 root.mainloop()
