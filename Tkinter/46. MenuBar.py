@@ -20,7 +20,7 @@ root.title('Customer Info Box')
 # Use an absolute path to the icon file
 icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
 root.iconbitmap(icon_path)
-root.geometry("800x600")
+root.geometry("800x900")
 
 
 my_menu = Menu(root)
@@ -91,21 +91,25 @@ from datetime import datetime
 import sqlite3
 
 def search_window():
+    hide_all_frame()
     # Create a new Toplevel window
-    search_win = Toplevel()
-    search_win.title("Search and Edit Customer")
-
+    #edit_edit_frame = Toplevel()
+    #edit_edit_frame.title("Search and Edit Customer")
+    global edit_edit_frame
+    #edit_edit_frame = Frame(root)  # Assuming root is your main tkinter window
+    edit_edit_frame = customtkinter.CTkFrame(master=root, width=800, height=600, fg_color='gray')
+    edit_edit_frame.pack(pady=20, padx=60, fill='both', expand=True)
     # Create a StringVar for the search entry
     search_var = StringVar()
 
     # Create and place the widgets in the new window
-    search_label = Label(search_win, text="Enter Customer Name:", font=('Helvetica', 12))
+    search_label = Label(edit_edit_frame, text="Enter Customer Name:", font=('Helvetica', 10),bg='gray')
     search_label.grid(row=0, column=0, padx=10, pady=10)
 
-    search_entry = Entry(search_win, textvariable=search_var, width=30, font=('Helvetica', 12))
+    search_entry = Entry(edit_edit_frame, textvariable=search_var, width=50, font=('Helvetica', 10))
     search_entry.grid(row=0, column=1, padx=10, pady=10)
 
-    search_button = Button(search_win, text="Search", command=lambda: perform_search(search_var.get(), search_win))
+    search_button = Button(edit_edit_frame, text="Search",bg='green', command=lambda: perform_search(search_var.get(), edit_edit_frame))
     search_button.grid(row=0, column=2, padx=10, pady=10)
 
     def perform_search(customer_name, win):
@@ -167,51 +171,51 @@ def search_window():
                 display_record(current_record_index)
 
         # Labels and Entry widgets for editing
-        Label(win, text="Customer Name:", font=('Helvetica', 12)).grid(row=2, column=0, padx=10, pady=5, sticky='e')
-        name_entry = Entry(win, width=40, font=('Helvetica', 12))
+        Label(win, text="Customer Name:", font=('Helvetica', 10),bg='gray').grid(row=2, column=0, padx=10, pady=5, sticky='e')
+        name_entry = Entry(win, width=50, font=('Helvetica', 10))
         name_entry.grid(row=2, column=1, padx=10, pady=5)
 
-        Label(win, text="Date:", font=('Helvetica', 12)).grid(row=3, column=0, padx=10, pady=5, sticky='e')
-        date_entry = Entry(win, width=40, font=('Helvetica', 12))
+        Label(win, text="Date:", font=('Helvetica', 10),bg='gray').grid(row=3, column=0, padx=10, pady=5, sticky='e')
+        date_entry = Entry(win, width=50, font=('Helvetica', 10))
         date_entry.grid(row=3, column=1, padx=10, pady=5)
 
-        Label(win, text="Link TCS2:", font=('Helvetica', 12)).grid(row=4, column=0, padx=10, pady=5, sticky='e')
-        link1_entry = Entry(win, width=40, font=('Helvetica', 12))
+        Label(win, text="Link TCS2:", font=('Helvetica', 10),bg='gray').grid(row=4, column=0, padx=10, pady=5, sticky='e')
+        link1_entry = Entry(win, width=50, font=('Helvetica', 10))
         link1_entry.grid(row=4, column=1, padx=10, pady=5)
 
-        Label(win, text="Link TCS3:", font=('Helvetica', 12)).grid(row=5, column=0, padx=10, pady=5, sticky='e')
-        link2_entry = Entry(win, width=40, font=('Helvetica', 12))
+        Label(win, text="Link TCS3:", font=('Helvetica', 10),bg='gray').grid(row=5, column=0, padx=10, pady=5, sticky='e')
+        link2_entry = Entry(win, width=50, font=('Helvetica', 10))
         link2_entry.grid(row=5, column=1, padx=10, pady=5)
 
-        Label(win, text="FTP Link:", font=('Helvetica', 12)).grid(row=6, column=0, padx=10, pady=5, sticky='e')
-        ftp_link_entry = Entry(win, width=40, font=('Helvetica', 12))
+        Label(win, text="FTP Link:", font=('Helvetica', 10),bg='gray').grid(row=6, column=0, padx=10, pady=5, sticky='e')
+        ftp_link_entry = Entry(win, width=50, font=('Helvetica', 10))
         ftp_link_entry.grid(row=6, column=1, padx=10, pady=5)
 
-        Label(win, text="FTP Username:", font=('Helvetica', 12)).grid(row=7, column=0, padx=10, pady=5, sticky='e')
-        ftp_username_entry = Entry(win, width=40, font=('Helvetica', 12))
+        Label(win, text="FTP Username:", font=('Helvetica', 10),bg='gray').grid(row=7, column=0, padx=10, pady=5, sticky='e')
+        ftp_username_entry = Entry(win, width=50, font=('Helvetica', 10))
         ftp_username_entry.grid(row=7, column=1, padx=10, pady=5)
 
-        Label(win, text="FTP Password:", font=('Helvetica', 12)).grid(row=8, column=0, padx=10, pady=5, sticky='e')
-        ftp_pass_entry = Entry(win, width=40, font=('Helvetica', 12))
+        Label(win, text="FTP Password:", font=('Helvetica', 10),bg='gray').grid(row=8, column=0, padx=10, pady=5, sticky='e')
+        ftp_pass_entry = Entry(win, width=50, font=('Helvetica', 10))
         ftp_pass_entry.grid(row=8, column=1, padx=10, pady=5)
 
-        Label(win, text="Notes:", font=('Helvetica', 12)).grid(row=9, column=0, padx=10, pady=5, sticky='ne')
-        notes_entry = tk.Text(win, width=40, height=15, font=('Helvetica', 12))
+        Label(win, text="Notes:", font=('Helvetica', 10),bg='gray').grid(row=9, column=0, padx=10, pady=5, sticky='ne')
+        notes_entry = tk.Text(win, width=50, height=15, font=('Helvetica', 10))
         notes_entry.grid(row=9, column=1, padx=10, pady=5)
 
         # Create a Frame to hold both buttons and center them
-        button_frame = Frame(win)
-        button_frame.grid(row=11, column=0, columnspan=2)
+        button_frame = Frame(win,bg='gray')
+        button_frame.grid(row=10, column=0, columnspan=2, pady=(10, 0), padx=7)
 
         # Navigation buttons - Previous and Next side by side in the Frame
-        prev_button = Button(button_frame, text="Previous", command=prev_record, font=('Helvetica', 12))
-        next_button = Button(button_frame, text="Next", command=next_record, font=('Helvetica', 12))
+        prev_button = Button(button_frame, text="Previous",bg='green', command=prev_record, font=('Helvetica', 10))
+        next_button = Button(button_frame, text="Next",bg='green', command=next_record, font=('Helvetica', 10))
 
         prev_button.pack(side=tk.LEFT, padx=10)
         next_button.pack(side=tk.RIGHT, padx=10)
 
         # Create a label to show the current record index and total records
-        status_label = Label(win, text=f"Record 1 of {total_records}", font=('Helvetica', 12))
+        status_label = Label(win, text=f"Record 1 of {total_records}", font=('Helvetica', 10),bg='gray')
         status_label.grid(row=12, column=0, columnspan=2, padx=10, pady=10)
 
         def save_edits():
@@ -253,8 +257,10 @@ def search_window():
             win.destroy()  # Close the search window after saving
 
         # Save button to update the record
-        save_button = Button(win, text="Save Changes", command=save_edits, font=('Helvetica', 12))
-        save_button.grid(row=10, column=0, columnspan=2, pady=10)
+        save_button = Button(win, text="Save Changes", command=save_edits,bg='green', font=('Helvetica', 10))
+        #save_button.grid(row=10, column=1, columnspan=2, pady=10)
+        save_button.grid(row=10, column=1, columnspan=2, pady=(10, 0), padx=7)
+
 
         # Display the first record by default
         display_record(current_record_index)
@@ -274,8 +280,11 @@ def about():
     about_window.title('About')
     about_window.geometry('300x200')
     lbl = Label(about_window, text='Copyright ©arbrtech. All Rights Reserved', fg='white', bg='#36454F')
-    lbl.pack(pady=90, anchor='s')
-    # lbl.grid(row=10, column=2, pady=(10, 0), padx=20)
+    #lbl.pack(pady=90, anchor='s')
+    lbl.grid(row=0, column=1, pady=(10, 0), padx=20)
+    lbl2 = Label(about_window, text='Version 1.1.3',fg='white', bg='#36454F')
+    lbl2.grid(row=1, column=1, pady=(10, 0), padx=20)
+    #lbl2.pack(pady=90, anchor='w')
 
 # Find function not in use
 def find():
@@ -305,7 +314,7 @@ def find():
     find.bind('<Button-1>', on_click)
     find.pack(pady=10)
 
-    btn_query = tk.Button(find_window, text='Show records', command=show)
+    btn_query = tk.Button(find_window, text='Show records',bg='green', command=show)
     btn_query.pack(pady=10)
 
     find_window.mainloop()
@@ -409,7 +418,7 @@ def add_new():
             customer_ftp_pass.delete(0,END)
             customer_info.delete('1.0',END)
 
-    submit_btn = Button(file_add_frame, text='Save',font=('Helvetica', 10),command=submit)
+    submit_btn = Button(file_add_frame, text='Save',bg='green',font=('Helvetica', 10),command=submit)
     submit_btn.grid(row=8,column=2,pady=(10, 0), padx=7)
 #Hide all frame function
 def hide_all_frame():
@@ -418,6 +427,8 @@ def hide_all_frame():
     edit_delete_frame.pack_forget()
     password_frame.pack_forget()
     main_frame.pack_forget()
+    show_frame.pack_forget()
+
 
 
 #Update function
@@ -474,6 +485,7 @@ def update():
         customer_ftp_pass.delete(0, END)
         customer_info.delete('1.0', END)
 def show():
+    hide_all_frame()
     # Check if the user input is empty
     if not z.get().strip():
         messagebox.showwarning("Input Error", "Please enter a customer name.")
@@ -532,67 +544,71 @@ def show():
             display_record(records[current_record_index])
 
     # Create a new window to display the records
-    show_window = Tk()
-    show_window.title('Show Record')
-    show_window.geometry('600x600')
+    #show_window = Tk()
+    #show_window.title('Show Record')
+    #show_window.geometry('600x600')
+    global show_frame
+    #show_frame = Frame(root)  # Assuming root is your main tkinter window
+    show_frame = customtkinter.CTkFrame(master=root, width=800, height=600, fg_color='gray')
+    show_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
     # Create and place widgets to display the customer information
-    main_frame = Frame(show_window)
-    main_frame.pack(pady=20)
+    #main_frame = Frame(show_frame)
+    #main_frame.pack(pady=20)
 
-    name_lbl = Label(main_frame, text='Customer name:', font=('Helvetica', 10), justify=LEFT)
+    name_lbl = Label(show_frame, text='Customer name:', font=('Helvetica', 10), justify=LEFT,bg='gray')
     name_lbl.grid(row=0, column=0, pady=(10, 0), padx=7, sticky='e')
-    name = Entry(main_frame, width=60)
+    name = Entry(show_frame, width=60)
     name.grid(row=0, column=1, pady=(10, 0), padx=7)
 
-    link1_lbl = Label(main_frame, text='Link TCS2:',font=('Helvetica', 10), justify=LEFT)
+    link1_lbl = Label(show_frame, text='Link TCS2:',font=('Helvetica', 10), justify=LEFT,bg='gray')
     link1_lbl.grid(row=1, column=0, pady=(10, 0), padx=7, sticky='e')
-    link1 = Entry(main_frame, width=60)
+    link1 = Entry(show_frame, width=60)
     link1.grid(row=1, column=1, pady=(10, 0), padx=7)
 
-    link2_lbl = Label(main_frame, text='Link TCS3:')
+    link2_lbl = Label(show_frame, text='Link TCS3:',font=('Helvetica', 10),bg='gray')
     link2_lbl.grid(row=2, column=0, pady=(10, 0), padx=7, sticky='e')
-    link2 = Entry(main_frame, width=60)
+    link2 = Entry(show_frame, width=60)
     link2.grid(row=2, column=1, pady=(10, 0), padx=7)
 
-    ftp_lbl = Label(main_frame, text='FTP link:')
+    ftp_lbl = Label(show_frame, text='FTP link:',font=('Helvetica', 10),bg='gray')
     ftp_lbl.grid(row=3, column=0, pady=(10, 0), padx=7, sticky='e')
-    ftp = Entry(main_frame, width=60)
+    ftp = Entry(show_frame, width=60)
     ftp.grid(row=3, column=1, pady=(10, 0), padx=7)
 
-    ftp_user_lbl = Label(main_frame, text='FTP User name:')
+    ftp_user_lbl = Label(show_frame, text='FTP User name:',font=('Helvetica', 10),bg='gray')
     ftp_user_lbl.grid(row=4, column=0, pady=(10, 0), padx=7, sticky='e')
-    ftp_user = Entry(main_frame, width=60)
+    ftp_user = Entry(show_frame, width=60)
     ftp_user.grid(row=4, column=1, pady=(10, 0), padx=7)
 
-    ftp_pass_lbl = Label(main_frame, text='FTP Password:')
+    ftp_pass_lbl = Label(show_frame, text='FTP Password:',font=('Helvetica', 10),bg='gray')
     ftp_pass_lbl.grid(row=5, column=0, pady=(10, 0), padx=7, sticky='e')
-    ftp_pass = Entry(main_frame, width=60)
+    ftp_pass = Entry(show_frame, width=60)
     ftp_pass.grid(row=5, column=1, pady=(10, 0), padx=7)
 
-    info_lbl = Label(main_frame, text='Info:')
+    info_lbl = Label(show_frame, text='Info:',font=('Helvetica', 10),bg='gray')
     info_lbl.grid(row=6, column=0, pady=(10, 0), padx=7, sticky='ne')
-    info = Text(main_frame, height=10, width=45)
+    info = Text(show_frame, height=10, width=45)
     info.grid(row=6, column=1, pady=(10, 0), padx=7)
 
     # Create a Frame to hold navigation buttons (Previous and Next) and center it
-    button_frame = Frame(main_frame)
+    button_frame = Frame(show_frame,bg='gray')
     button_frame.grid(row=7, column=0, columnspan=2, pady=(20, 0))
 
     # Create Previous and Next buttons side by side in the button frame
-    prev_btn = Button(button_frame, text='Previous', command=prev_record)
-    next_btn = Button(button_frame, text='Next', command=next_record)
+    prev_btn = Button(button_frame, text='Previous',bg='green', command=prev_record)
+    next_btn = Button(button_frame, text='Next',bg='green', command=next_record)
 
     prev_btn.pack(side=LEFT, padx=20)
     next_btn.pack(side=RIGHT, padx=20)
 
     # Create a label to show the current record index and total records, centered
-    status_label = Label(main_frame, text=f"Record {current_record_index + 1} of {total_records}")
+    status_label = Label(show_frame, text=f"Record {current_record_index + 1} of {total_records}",bg='gray')
     status_label.grid(row=8, column=0, columnspan=2, pady=(20, 10))
 
     # Close button centered below the navigation buttons
-    close = Button(main_frame, text='Exit', command=show_window.destroy)
-    close.grid(row=9, column=0, columnspan=2, pady=(10, 0))
+    #close = Button(main_frame, text='Exit', command=show_frame.destroy)
+    #close.grid(row=9, column=0, columnspan=2, pady=(10, 0))
 
     # Display the first record by default
     display_record(records[current_record_index])
@@ -626,42 +642,80 @@ def fetch():
     del_customer_name.bind('<Button-1>', on_click)
     del_customer_name.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
 
-    def delete():
+    # Create a listbox to show multiple matching records
+    records_listbox = tk.Listbox(edit_delete_frame, height=6, selectmode=tk.SINGLE, width=60)
+    records_listbox.grid(row=2, column=2, pady=(10, 0), padx=7)
+
+    def search_records():
         customer_name = y.get()
 
         if not customer_name:
             messagebox.showwarning("Input Error", "Please enter a customer name.")
             return
 
-        # Confirmation window
-        confirm = messagebox.askyesno("Delete Confirmation",
-                                      f"Are you sure you want to delete customer '{customer_name}'?")
+        conn = sqlite3.connect('customer_book.db')
+        cur_sor = conn.cursor()
 
-        if confirm:  # If user clicks "Yes"
-            try:
+        # Find matching records with a partial search
+        cur_sor.execute("SELECT rowid, name, date FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + customer_name + '%',))
+        records = cur_sor.fetchall()
+
+        # Clear previous listbox entries
+        records_listbox.delete(0, tk.END)
+
+        if not records:
+            messagebox.showinfo("No Results", "No matching records found.")
+            conn.close()
+            return
+
+        # Display the records in the listbox
+        for record in records:
+            records_listbox.insert(tk.END, f"ID: {record[0]}, Name: {record[1]}, Date: {record[2]}")
+
+        conn.close()
+
+    search_button = tk.Button(edit_delete_frame, text='Search',bg='green', command=search_records)
+    search_button.grid(row=0, column=3, padx=10)
+
+    def delete():
+        try:
+            # Get selected record
+            selected_index = records_listbox.curselection()
+            if not selected_index:
+                messagebox.showwarning("Selection Error", "Please select a record to delete.")
+                return
+
+            selected_record = records_listbox.get(selected_index)
+            record_id = selected_record.split(",")[0].split(":")[1].strip()  # Extract record ID
+
+            # Confirmation window
+            confirm = messagebox.askyesno("Delete Confirmation", f"Are you sure you want to delete record ID {record_id}?")
+
+            if confirm:  # If user clicks "Yes"
                 conn = sqlite3.connect('customer_book.db')
                 cur_sor = conn.cursor()
 
-                # Delete a record with an exact match
-                cur_sor.execute("DELETE FROM customer WHERE name = ? COLLATE NOCASE", (customer_name,))  # Exact match
+                # Delete the record with the selected ID
+                cur_sor.execute("DELETE FROM customer WHERE rowid = ?", (record_id,))
 
                 # Commit changes
                 conn.commit()
 
-                # Clear the input field
+                # Clear the input field and listbox
                 del_customer_name.delete(0, tk.END)
+                records_listbox.delete(0, tk.END)
 
-                messagebox.showinfo("Success", f"Customer '{customer_name}' deleted successfully.")
+                messagebox.showinfo("Success", f"Record ID {record_id} deleted successfully.")
 
-            except sqlite3.Error as e:
-                messagebox.showerror("Database Error", f"An error occurred: {e}")
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"An error occurred: {e}")
 
-            finally:
-                # Close connection
-                conn.close()
+        finally:
+            # Close connection
+            conn.close()
 
     # Delete record button
-    delete_btn = tk.Button(edit_delete_frame, text='Delete', command=delete)
+    delete_btn = tk.Button(edit_delete_frame, text='Delete',bg='green', command=delete)
     delete_btn.grid(row=8, column=2, columnspan=2, pady=10, padx=10, ipadx=95)
 
 
@@ -756,6 +810,7 @@ file_add_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_col
 edit_edit_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 edit_delete_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 password_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+show_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 
 find_lbl = customtkinter.CTkLabel(root,text = 'Find Customer')
 find_lbl.pack()
@@ -767,14 +822,14 @@ def on_click(event):  # this function for place holder in entry box
     find.delete(0,END)
 find.bind('<Button-1>',on_click)
 find.pack(pady=10)
-btn_query = Button(root, text='Show records', command=show)
+btn_query = Button(root, text='Show records',bg='green', command=show)
 btn_query.pack()
 #btn_query = Button(root, text='Search-edit records', command=edit)
 #btn_query.pack(pady=10)
 
-search_btn = Button(root, text="Edit Customer", command=search_window)
+search_btn = Button(root, text="Edit Customer",bg='green', command=search_window)
 search_btn.pack(pady=20)
-lbl = customtkinter.CTkLabel(root, text='©arbtech')
-lbl.pack(anchor='se')
+#lbl = customtkinter.CTkLabel(root, text='©arbtech')
+#lbl.pack(anchor='se')
 
 root.mainloop()
