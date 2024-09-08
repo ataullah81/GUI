@@ -135,7 +135,7 @@ def search_window():
             name_entry.delete(0, tk.END)
             name_entry.insert(0, record[0])
             date_entry.delete(0, tk.END)
-            date_entry.insert(0, record[1])
+            date_entry.insert(0, record[8])
             link1_entry.delete(0, tk.END)
             link1_entry.insert(0, record[2])
             link2_entry.delete(0, tk.END)
@@ -196,7 +196,7 @@ def search_window():
         ftp_pass_entry.grid(row=8, column=1, padx=10, pady=5)
 
         Label(win, text="Notes:", font=('Helvetica', 12)).grid(row=9, column=0, padx=10, pady=5, sticky='ne')
-        notes_entry = tk.Text(win, width=40, height=4, font=('Helvetica', 12))
+        notes_entry = tk.Text(win, width=40, height=15, font=('Helvetica', 12))
         notes_entry.grid(row=9, column=1, padx=10, pady=5)
 
         # Create a Frame to hold both buttons and center them
@@ -540,12 +540,12 @@ def show():
     main_frame = Frame(show_window)
     main_frame.pack(pady=20)
 
-    name_lbl = Label(main_frame, text='Customer name:')
+    name_lbl = Label(main_frame, text='Customer name:', font=('Helvetica', 10), justify=LEFT)
     name_lbl.grid(row=0, column=0, pady=(10, 0), padx=7, sticky='e')
     name = Entry(main_frame, width=60)
     name.grid(row=0, column=1, pady=(10, 0), padx=7)
 
-    link1_lbl = Label(main_frame, text='Link TCS2:')
+    link1_lbl = Label(main_frame, text='Link TCS2:',font=('Helvetica', 10), justify=LEFT)
     link1_lbl.grid(row=1, column=0, pady=(10, 0), padx=7, sticky='e')
     link1 = Entry(main_frame, width=60)
     link1.grid(row=1, column=1, pady=(10, 0), padx=7)
