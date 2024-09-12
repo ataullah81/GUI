@@ -1,5 +1,7 @@
 import customtkinter
 from tkinter import *
+
+from customtkinter import CTkButton
 from tkcalendar import *
 from datetime import datetime
 from tkinter import messagebox, filedialog
@@ -8,6 +10,7 @@ import os
 import json
 from random import randint
 import tkinter.messagebox
+
 import tkinter as tk
 from tkinter import Toplevel, StringVar, Entry, Button, Label, messagebox
 import babel.numbers
@@ -16,11 +19,12 @@ customtkinter.set_appearance_mode('dark')
 customtkinter.set_default_color_theme('dark-blue')
 
 root = customtkinter.CTk()
-root.title('Customer Info Box')
+root.title('Ticket Info Box')
 # Use an absolute path to the icon file
 icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
 root.iconbitmap(icon_path)
 root.geometry("800x900")
+
 
 my_menu = Menu(root)
 root.config(menu=my_menu)
@@ -63,6 +67,7 @@ def ask_database_info():
     # Create the Tkinter window for asking database name and directory
     db_window = Toplevel()
     db_window.title("Database Configuration")
+    db_window.wm_attributes("-topmost", 1)
 
     Label(db_window, text="Enter Database Name:").grid(row=0, column=0, padx=10, pady=10)
     db_name_entry = Entry(db_window, width=40)
@@ -173,356 +178,7 @@ def load_settings():
             return settings.get("database_path")
     return None
 
-'''
-def search_window():
-    hide_all_frame()
 
-    # Load the database path from settings file
-    db_path = load_settings()
-    if not db_path:
-        messagebox.showerror("Error", "Database path not set. Please configure the database.")
-        return
-
-    # Create a new Toplevel window
-    global edit_edit_frame
-    edit_edit_frame = customtkinter.CTkFrame(master=root, width=800, height=600, fg_color='gray')
-    edit_edit_frame.pack(pady=20, padx=60, fill='both', expand=True)
-
-    search_name_var = StringVar()
-    search_subject_var = StringVar()
-
-    search_label = Label(edit_edit_frame, text="Enter Customer Name:", font=('Helvetica', 10), bg='gray')
-    search_label.grid(row=0, column=0, padx=10, pady=10)
-    search_entry = Entry(edit_edit_frame, textvariable=search_name_var, width=50, font=('Helvetica', 10))
-    search_entry.grid(row=0, column=1, padx=10, pady=10)
-
-    subject_label = Label(edit_edit_frame, text="Enter Subject:", font=('Helvetica', 10), bg='gray')
-    subject_label.grid(row=1, column=0, padx=10, pady=10)
-    subject_entry = Entry(edit_edit_frame, textvariable=search_subject_var, width=50, font=('Helvetica', 10))
-    subject_entry.grid(row=1, column=1, padx=10, pady=10)
-
-    search_button = Button(edit_edit_frame, text="Search", bg='green',
-                           command=lambda: perform_search(search_name_var.get(), search_subject_var.get()))
-    search_button.grid(row=0, column=2, padx=10, pady=10)
-
-    def perform_search(customer_name, subject):
-        if not customer_name.strip() or not subject.strip():
-            messagebox.showwarning("Input Error", "Please enter both customer name and subject.")
-            return
-
-        conn = sqlite3.connect(db_path)
-        cur_sor = conn.cursor()
-
-        cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE",
-                        ('%' + customer_name + '%', '%' + subject + '%'))
-        records = cur_sor.fetchall()
-
-        if not records:
-            messagebox.showinfo("No Results", "No customer found with that name and subject.")
-            conn.close()
-            return
-
-        global current_record_index
-        current_record_index = 0
-        total_records = len(records)
-
-        def display_record(index):
-            """ Display the customer data in the entry fields """
-            record = records[index]
-            name_entry.delete(0, tk.END)
-            name_entry.insert(0, record[0])
-            subject_entry.delete(0, tk.END)
-            subject_entry.insert(0, record[1])  # Assuming date is in index 2
-            date_entry.delete(0, tk.END)
-            date_entry.insert(0, record[2])  # Assuming date is in index 2
-            notes_entry.delete('1.0', tk.END)
-            notes_entry.insert(tk.END, record[3])  # Assuming info is in index 3
-
-            # Update the status label to show the current record number and total records
-            status_label.config(text=f"Record {index + 1} of {total_records}")
-
-        def next_record():
-            """ Show the next record """
-            global current_record_index
-            if current_record_index < total_records - 1:
-                current_record_index += 1
-                display_record(current_record_index)
-
-        def prev_record():
-            """ Show the previous record """
-            global current_record_index
-            if current_record_index > 0:
-                current_record_index -= 1
-                display_record(current_record_index)
-
-        # Labels and Entry widgets for editing (using edit_edit_frame instead of win)
-        Label(edit_edit_frame, text="Customer Name:", font=('Helvetica', 10), bg='gray').grid(row=2, column=0, padx=10,
-                                                                                              pady=5, sticky='e')
-        name_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
-        name_entry.grid(row=2, column=1, padx=10, pady=5)
-
-        Label(edit_edit_frame, text="Subject:", font=('Helvetica', 10), bg='gray').grid(row=3, column=0, padx=10, pady=5,
-                                                                                     sticky='e')
-        subject_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
-        subject_entry.grid(row=3, column=1, padx=10, pady=5)
-
-        Label(edit_edit_frame, text="Date:", font=('Helvetica', 10), bg='gray').grid(row=4, column=0, padx=10, pady=5,
-                                                                                     sticky='e')
-        date_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
-        date_entry.grid(row=4, column=1, padx=10, pady=5)
-
-        Label(edit_edit_frame, text="Notes:", font=('Helvetica', 10), bg='gray').grid(row=9, column=0, padx=10, pady=5,
-                                                                                      sticky='ne')
-        notes_entry = tk.Text(edit_edit_frame, width=50, height=15, font=('Helvetica', 10))
-        notes_entry.grid(row=9, column=1, padx=10, pady=5)
-
-        # Create a Frame to hold both buttons and center them
-        button_frame = Frame(edit_edit_frame, bg='gray')
-        button_frame.grid(row=10, column=0, columnspan=2, pady=(10, 0), padx=7)
-
-        # Navigation buttons - Previous and Next side by side in the Frame
-        prev_button = Button(button_frame, text="Previous", bg='green', command=prev_record, font=('Helvetica', 10))
-        next_button = Button(button_frame, text="Next", bg='green', command=next_record, font=('Helvetica', 10))
-
-        prev_button.pack(side=tk.LEFT, padx=10)
-        next_button.pack(side=tk.RIGHT, padx=10)
-
-        # Create a label to show the current record index and total records
-        status_label = Label(edit_edit_frame, text=f"Record 1 of {total_records}", font=('Helvetica', 10), bg='gray')
-        status_label.grid(row=12, column=0, columnspan=2, padx=10, pady=10)
-
-        def save_edits():
-            conn = sqlite3.connect(db_path)
-            cur_sor = conn.cursor()
-
-            # Get the current date and time
-            modify_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-            # Update the record in the database with the new values
-            cur_sor.execute("""
-                UPDATE customer SET 
-                    name = ?, 
-                    date = ?, 
-                    info = ?, 
-                    MODIFYDATE = ?
-                WHERE name = ? AND subject = ?
-            """, (
-                name_entry.get(),
-                date_entry.get(),
-                notes_entry.get("1.0", tk.END).strip(),
-                modify_date,
-                records[current_record_index][0],  # The original customer name to identify the record
-                records[current_record_index][1],  # The original subject to identify the record
-            ))
-
-            conn.commit()
-            messagebox.showinfo("Success", "Record updated successfully")
-            conn.close()
-
-        # Save button to update the record
-        save_button = Button(edit_edit_frame, text="Save Changes", command=save_edits, bg='green',
-                             font=('Helvetica', 10))
-        save_button.grid(row=10, column=1, columnspan=2, pady=(10, 0), padx=7)
-
-        # Display the first record by default
-        display_record(current_record_index)
-
-        conn.close()
-
-        # Assuming the root window is already created and there is a button to call search_window
-
-'''
-'''
-def search_window():
-    hide_all_frame()
-
-    # Load the database path from settings file
-    db_path = load_settings()
-    if not db_path:
-        messagebox.showerror("Error", "Database path not set. Please configure the database.")
-        return
-
-    # Create the main frame for the search window
-    global edit_edit_frame
-    edit_edit_frame = customtkinter.CTkFrame(master=root, width=800, height=600, fg_color='gray')
-    edit_edit_frame.pack(pady=20, padx=60, fill='both', expand=True)
-
-    search_name_var = StringVar()
-
-    # Customer Name Label and Entry
-    search_label = Label(edit_edit_frame, text="Enter Customer Name:", font=('Helvetica', 10), bg='gray')
-    search_label.grid(row=0, column=0, padx=10, pady=10)
-    search_entry = Entry(edit_edit_frame, textvariable=search_name_var, width=50, font=('Helvetica', 10))
-    search_entry.grid(row=0, column=1, padx=10, pady=10)
-
-    # Button to search for the customer and load subjects
-    search_button = Button(edit_edit_frame, text="Search", bg='green',
-                           command=lambda: load_subjects(search_name_var.get()))
-    search_button.grid(row=0, column=2, padx=10, pady=10)
-
-    # Function to load all subjects for the searched customer
-    def load_subjects(customer_name):
-        if not customer_name.strip():
-            messagebox.showwarning("Input Error", "Please enter a customer name.")
-            return
-
-        conn = sqlite3.connect(db_path)
-        cur_sor = conn.cursor()
-
-        # Query to retrieve all distinct subjects for the customer
-        cur_sor.execute("SELECT DISTINCT subject FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + customer_name + '%',))
-        subjects = cur_sor.fetchall()
-
-        if not subjects:
-            messagebox.showinfo("No Results", "No subjects found for this customer.")
-            conn.close()
-            return
-
-        # Flatten the list of subjects
-        subject_list = [subject[0] for subject in subjects]
-
-        # Subject Dropdown Menu
-        subject_var = StringVar(edit_edit_frame)
-        subject_var.set(subject_list[0])  # Set the first subject as default
-
-        subject_label = Label(edit_edit_frame, text="Select Subject:", font=('Helvetica', 10), bg='gray')
-        subject_label.grid(row=1, column=0, padx=10, pady=10,sticky='e')
-
-        subject_dropdown = customtkinter.CTkOptionMenu(edit_edit_frame, values=subject_list, variable=subject_var)
-        subject_dropdown.grid(row=1, column=1, padx=10, pady=10)
-
-        # Button to search with selected subject
-        search_with_subject_button = Button(edit_edit_frame, text="Search by Subject", bg='green',
-                                            command=lambda: perform_search(customer_name, subject_var.get()))
-        search_with_subject_button.grid(row=1, column=2, padx=10, pady=10)
-
-        conn.close()
-
-    def perform_search(customer_name, subject):
-        if not customer_name.strip() or not subject.strip():
-            messagebox.showwarning("Input Error", "Please enter both customer name and select a subject.")
-            return
-
-        conn = sqlite3.connect(db_path)
-        cur_sor = conn.cursor()
-
-        cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE",
-                        ('%' + customer_name + '%', '%' + subject + '%'))
-        records = cur_sor.fetchall()
-
-        if not records:
-            messagebox.showinfo("No Results", "No customer found with that name and subject.")
-            conn.close()
-            return
-
-        global current_record_index
-        current_record_index = 0
-        total_records = len(records)
-
-        def display_record(index):
-            """ Display the customer data in the entry fields """
-            record = records[index]
-            name_entry.delete(0, tk.END)
-            name_entry.insert(0, record[0])
-            subject_entry.delete(0, tk.END)
-            subject_entry.insert(0, record[1])
-            date_entry.delete(0, tk.END)
-            date_entry.insert(0, record[2])  # Assuming date is in index 2
-            notes_entry.delete('1.0', tk.END)
-            notes_entry.insert(tk.END, record[3])  # Assuming info is in index 3
-
-            # Update the status label to show the current record number and total records
-            status_label.config(text=f"Record {index + 1} of {total_records}")
-
-        def next_record():
-            """ Show the next record """
-            global current_record_index
-            if current_record_index < total_records - 1:
-                current_record_index += 1
-                display_record(current_record_index)
-
-        def prev_record():
-            """ Show the previous record """
-            global current_record_index
-            if current_record_index > 0:
-                current_record_index -= 1
-                display_record(current_record_index)
-
-        # Labels and Entry widgets for editing (using edit_edit_frame instead of win)
-        Label(edit_edit_frame, text="Customer Name:", font=('Helvetica', 10), bg='gray').grid(row=2, column=0, padx=10,
-                                                                                              pady=5, sticky='e')
-        name_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
-        name_entry.grid(row=2, column=1, padx=10, pady=5)
-
-        Label(edit_edit_frame, text="Subject:", font=('Helvetica', 10), bg='gray').grid(row=3, column=0, padx=10, pady=5,
-                                                                                     sticky='e')
-        subject_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
-        subject_entry.grid(row=3, column=1, padx=10, pady=5)
-
-        Label(edit_edit_frame, text="Date:", font=('Helvetica', 10), bg='gray').grid(row=4, column=0, padx=10, pady=5,
-                                                                                     sticky='e')
-        date_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
-        date_entry.grid(row=4, column=1, padx=10, pady=5)
-
-        Label(edit_edit_frame, text="Notes:", font=('Helvetica', 10), bg='gray').grid(row=9, column=0, padx=10, pady=5,
-                                                                                      sticky='ne')
-        notes_entry = tk.Text(edit_edit_frame, width=50, height=15, font=('Helvetica', 10))
-        notes_entry.grid(row=9, column=1, padx=10, pady=5)
-
-        # Create a Frame to hold both buttons and center them
-        button_frame = Frame(edit_edit_frame, bg='gray')
-        button_frame.grid(row=10, column=0, columnspan=2, pady=(10, 0), padx=7)
-
-        # Navigation buttons - Previous and Next side by side in the Frame
-        prev_button = Button(button_frame, text="Previous", bg='green', command=prev_record, font=('Helvetica', 10))
-        next_button = Button(button_frame, text="Next", bg='green', command=next_record, font=('Helvetica', 10))
-
-        prev_button.pack(side=tk.LEFT, padx=10)
-        next_button.pack(side=tk.RIGHT, padx=10)
-
-        # Create a label to show the current record index and total records
-        status_label = Label(edit_edit_frame, text=f"Record 1 of {total_records}", font=('Helvetica', 10), bg='gray')
-        status_label.grid(row=12, column=0, columnspan=2, padx=10, pady=10)
-
-        def save_edits():
-            conn = sqlite3.connect(db_path)
-            cur_sor = conn.cursor()
-
-            # Get the current date and time
-            modify_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-            # Update the record in the database with the new values
-            cur_sor.execute("""
-                UPDATE customer SET 
-                    name = ?, 
-                    date = ?, 
-                    info = ?, 
-                    MODIFYDATE = ?
-                WHERE name = ? AND subject = ?
-            """, (
-                name_entry.get(),
-                date_entry.get(),
-                notes_entry.get("1.0", tk.END).strip(),
-                modify_date,
-                records[current_record_index][0],  # The original customer name to identify the record
-                records[current_record_index][1],  # The original subject to identify the record
-            ))
-
-            conn.commit()
-            messagebox.showinfo("Success", "Record updated successfully")
-            conn.close()
-
-        # Save button to update the record
-        save_button = Button(edit_edit_frame, text="Save Changes", command=save_edits, bg='green',
-                             font=('Helvetica', 10))
-        save_button.grid(row=10, column=1, columnspan=2, pady=(10, 0), padx=7)
-
-        # Display the first record by default
-        display_record(current_record_index)
-
-        conn.close()
-
-'''
 def search_window():
     hide_all_frame()
 
@@ -677,7 +333,7 @@ def search_window():
 
         Label(edit_edit_frame, text="Notes:", font=('Helvetica', 10), bg='gray').grid(row=6, column=0, padx=10, pady=5,
                                                                                       sticky='ne')
-        notes_entry = tk.Text(edit_edit_frame, width=50, height=15, font=('Helvetica', 10))
+        notes_entry = tk.Text(edit_edit_frame, width=50, height=25, font=('Helvetica', 10))
         notes_entry.grid(row=6, column=1, padx=10, pady=5)
 
         # Create a Frame to hold both buttons and center them
@@ -735,11 +391,6 @@ def search_window():
 
 
 
-
-def our_command():
-    pass
-
-
 def about():
     about_window = Tk()
     about_window.title('About')
@@ -751,108 +402,119 @@ def about():
     lbl2.grid(row=1, column=1, pady=(10, 0), padx=20)
     #lbl2.pack(pady=90, anchor='w')
 
-# Find function not in use
-def find():
-
-    hide_all_frame()
-    find_window = tk.Tk()
-    find_window.title('Find Customer')
-    find_window.geometry('400x200')  # Specify a reasonable default size
-
-    find_lbl = customtkinter.CTkLabel(find_window, text='Find Customer')
-    find_lbl.pack(pady=10)
-
-    find = Entry(find_window, textvariable=z, width=50)
-    find.insert(0, 'Enter customer name')
-    find.configure(state='disabled')
-
-    def on_click(event):  # This function for placeholder in the entry box
-        find.configure(state=NORMAL)
-        find.delete(0, END)
-
-    def validate_and_show():
-        customer_name = z.get().strip()
-        if not customer_name:
-            messagebox.showwarning("Input Error", "Please enter a customer name.")
-            return
-        show()
-
-    find.bind('<Button-1>', on_click)
-    find.pack(pady=10)
-
-    btn_query = tk.Button(find_window, text='Show records',bg='green', command=show)
-    btn_query.pack(pady=10)
-
-    find_window.mainloop()
-
 
 def add_new():
     hide_all_frame()
-    file_add_frame.pack(pady=20, padx= 60, fill='both', expand=True)
+    file_add_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
-    # create global variables for text boxes
-    global customer_name
+    global customer_name_dropdown
     global customer_subject
     global customer_date
     global customer_info
 
+    # Function to load all distinct customer names
+    def load_customer_names():
+        db_path = load_settings()
+        if not db_path:
+            messagebox.showerror("Error", "Database path not set. Please configure the database.")
+            return []
 
-    customer_name_lbl = Label(file_add_frame, text='Customer name: ' , font=('Helvetica' ,10),bg='gray')
-    customer_name_lbl.grid(row=0, column=1,pady=(10, 0), padx=7,sticky='w')
-    customer_name = Entry(file_add_frame, width=50)
-    customer_name.grid(row=0, column=2, pady=(10, 0), padx=7,sticky='w')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT name FROM customer")
+        customer_names = cursor.fetchall()
+        conn.close()
 
-    customer_subject_lbl = Label(file_add_frame, text='Subject:', font=('Helvetica', 10), bg='gray')
-    customer_subject_lbl.grid(row=1, column=1, pady=(10, 0), padx=7, sticky='w')
+        # Flatten the list of customer names
+        return [name[0] for name in customer_names]
+
+    # Load the customer names into the dropdown menu
+    customer_names_list = load_customer_names()
+
+    customer_name_lbl = Label(file_add_frame, text='Select or Add Customer:', font=('Helvetica', 10), bg='gray')
+    customer_name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='e')
+
+    customer_name_var = StringVar(file_add_frame)
+
+    # Combining dropdown and entry for customer name
+    if customer_names_list:
+        customer_name_var.set("Select or Add Customer")
+        customer_name_dropdown = customtkinter.CTkOptionMenu(file_add_frame, values=customer_names_list,
+                                                             variable=customer_name_var)
+        customer_name_dropdown.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
+    else:
+        customer_name_var.set("Add New Customer")
+
+    # Entry field to allow adding a new customer even when customers are available
+    customer_name_entry = Entry(file_add_frame, textvariable=customer_name_var, width=50)
+    customer_name_entry.grid(row=1, column=2, pady=(10, 0), padx=7, sticky='w')
+
+    # New subject input
+    customer_subject_lbl = Label(file_add_frame, text='New Subject:', font=('Helvetica', 10), bg='gray')
+    customer_subject_lbl.grid(row=2, column=1, pady=(10, 0), padx=7, sticky='e')
     customer_subject = Entry(file_add_frame, width=50)
-    customer_subject.grid(row=1, column=2, pady=(10, 0), padx=7, sticky='w')
+    customer_subject.grid(row=2, column=2, pady=(10, 0), padx=7, sticky='w')
 
-    customer_date_lbl = Label(file_add_frame, text='Date: ', font=('Helvetica', 10),bg='gray',justify=LEFT)
-    customer_date_lbl.grid(row=2, column=1,pady=(10, 0), padx=7,sticky='w')
-    customer_date = DateEntry(file_add_frame,date_pattern='dd-mm-yyyy')
-    customer_date.grid(row=2, column=2, pady=(10, 0), padx=7,sticky='w')
+    # Date input
+    customer_date_lbl = Label(file_add_frame, text='Date: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
+    customer_date_lbl.grid(row=3, column=1, pady=(10, 0), padx=7, sticky='e')
+    customer_date = DateEntry(file_add_frame, date_pattern='dd-mm-yyyy')
+    customer_date.grid(row=3, column=2, pady=(10, 0), padx=7, sticky='w')
 
+    # Notes input
     customer_info_lbl = Label(file_add_frame, text='Notes: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
-    customer_info_lbl.grid(row=7, column=1, pady=(10, 0), padx=7, sticky='w')
-    customer_info = Text(file_add_frame, height=5,width=52)
-    customer_info.grid(row=7, column=2, pady=(10, 0), padx=7, sticky='w')
+    customer_info_lbl.grid(row=4, column=1, pady=(10, 0), padx=7, sticky='e')
+    customer_info = Text(file_add_frame, height=25, width=52)
+    customer_info.grid(row=4, column=2, pady=(10, 0), padx=7, sticky='w')
 
-    # Load the database path from settings file
-
-
+    # Submit new subject for the selected or new customer
     def submit():
         db_path = load_settings()
         if not db_path:
             messagebox.showerror("Error", "Database path not set. Please configure the database.")
             return
 
-        conn =sqlite3.connect(db_path)
+        selected_customer_name = customer_name_var.get().strip()
+        subject = customer_subject.get().strip()
+        date = customer_date.get()
+        info = customer_info.get("1.0", 'end-1c')
+
+        if not selected_customer_name or not subject:
+            messagebox.showerror("Input Error", "Please enter both a customer and subject.")
+            return
+
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         try:
+            # Check if the customer and subject already exist
             cursor.execute(
                 "SELECT name, subject FROM customer WHERE LOWER(name) = LOWER(?) AND LOWER(subject) = LOWER(?)",
-                (customer_name.get(), customer_subject.get()))
+                (selected_customer_name, subject))
             if cursor.fetchone():
-                messagebox.showerror("Error", "Customer with this subject already exists!")
+                messagebox.showerror("Error", "Subject for this customer already exists!")
             else:
-                cursor.execute("INSERT INTO customer VALUES (?, ?, ?, ?, ?)",
-                               (customer_name.get(), customer_subject.get(), customer_date.get(),
-                                customer_info.get("1.0", 'end-1c'), current_date))
+                # Insert new customer and subject
+                cursor.execute("INSERT INTO customer (name, subject, date, info, modifydate) VALUES (?, ?, ?, ?, ?)",
+                               (selected_customer_name, subject, date, info, current_date))
                 conn.commit()
                 messagebox.showinfo("Success", "Record added successfully")
+
+                # Clear inputs
+                customer_subject.delete(0, END)
+                customer_date.delete(0, END)
+                customer_info.delete('1.0', END)
+
         except sqlite3.Error as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
-            #Close connection
         finally:
             conn.close()
-            customer_name.delete(0, END)
-            customer_subject.delete(0, END)
-            customer_date.delete(0, END)
-            customer_info.delete('1.0', END)
 
     submit_btn = Button(file_add_frame, text='Save', bg='green', font=('Helvetica', 10), command=submit)
-    submit_btn.grid(row=4, column=2, pady=(10, 0), padx=7)
+    submit_btn.grid(row=5, column=2, pady=(10, 0), padx=7)
+
+
 #Hide all frame function
 def hide_all_frame():
     file_add_frame.pack_forget()
@@ -862,168 +524,6 @@ def hide_all_frame():
     main_frame.pack_forget()
     show_frame.pack_forget()
 
-
-
-#Update function
-def update():
-    conn = sqlite3.connect('customer_book.db')
-    # Create cursor
-    cur_sor = conn.cursor()
-    #record_id = customer_name.get()
-    current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    try:
-
-        cur_sor.execute(""" UPDATE customer SET 
-            name= :name,
-            date = :date,
-            info = :notes,
-            modifydate = current_date
-            WHERE name = :name""",
-
-                        {
-                            'name':customer_name.get(),
-                            'date':customer_date.get(),
-                            'notes':customer_info.get("1.0",'end-1c'),
-                            'modifydate' :current_date
-                            }
-                        )
-
-
-        # Commit changes
-        conn.commit()
-        messagebox.showinfo("Success", "Record updated successfully")
-    except sqlite3.Error as e:
-        messagebox.showerror("Error", f"An error occurred: {e}")
-    finally:
-        # Close connection
-        conn.close()
-        #editor.destroy()
-        # Clear text boxes
-        customer_name.delete(0, END)
-        customer_date.delete(0, END)
-        customer_info.delete('1.0', END)
-
-'''
-def show():
-    hide_all_frame()
-    # Load the database path from settings file
-    db_path = load_settings()
-    if not db_path:
-        messagebox.showerror("Error", "Database path not set. Please configure the database.")
-        return
-    # Check if the user input is empty
-    if not z.get().strip():
-        messagebox.showwarning("Input Error", "Please enter a customer name.")
-        return  # Exit the function if input is empty
-
-    # Create database connection
-    conn = sqlite3.connect(db_path)
-    # Create cursor
-    cur_sor = conn.cursor()
-
-    # Execute the query with the provided customer name (wildcard search)
-    cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + z.get().strip() + '%',))
-    records = cur_sor.fetchall()
-
-    if not records:
-        messagebox.showinfo("No Records", "No matching records found.")
-        conn.close()
-        return  # Do not proceed to show window
-
-    global current_record_index
-    current_record_index = 0  # Track the index of the current record displayed
-    total_records = len(records)  # Get the total number of matching records
-
-    def display_record(record):
-        """ Display the customer data in the entry fields """
-        name.delete(0, END)
-        name.insert(0, record[0])
-        subject.delete(0, END)
-        subject.insert(0, record[1])
-        date.delete(0, END)
-        date.insert(0, record[4])
-        info.delete('1.0', END)
-        info.insert('1.0', record[3])
-
-
-
-        # Update the status label to show the current record number and total records
-        status_label.config(text=f"Record {current_record_index + 1} of {total_records}")
-
-    def next_record():
-        """ Show the next record """
-        global current_record_index
-        if current_record_index < len(records) - 1:
-            current_record_index += 1
-            display_record(records[current_record_index])
-
-    def prev_record():
-        """ Show the previous record """
-        global current_record_index
-        if current_record_index > 0:
-            current_record_index -= 1
-            display_record(records[current_record_index])
-
-    # Create a new window to display the records
-    #show_window = Tk()
-    #show_window.title('Show Record')
-    #show_window.geometry('600x600')
-    global show_frame
-    #show_frame = Frame(root)  # Assuming root is your main tkinter window
-    show_frame = customtkinter.CTkFrame(master=root, width=800, height=600, fg_color='gray')
-    show_frame.pack(pady=20, padx=60, fill='both', expand=True)
-
-    # Create and place widgets to display the customer information
-    #main_frame = Frame(show_frame)
-    #main_frame.pack(pady=20)
-
-    name_lbl = Label(show_frame, text='Customer name:', font=('Helvetica', 10), justify=LEFT,bg='gray')
-    name_lbl.grid(row=0, column=0, pady=(10, 0), padx=7, sticky='e')
-    name = Entry(show_frame, width=60)
-    name.grid(row=0, column=1, pady=(10, 0), padx=7)
-
-    sub_lbl = Label(show_frame, text='Subject:', font=('Helvetica', 10), justify=LEFT, bg='gray')
-    sub_lbl.grid(row=1, column=0, pady=(10, 0), padx=7, sticky='e')
-    subject = Entry(show_frame, width=60)
-    subject.grid(row=1, column=1, pady=(10, 0), padx=7)
-
-    date_lbl = Label(show_frame, text='Date:', font=('Helvetica', 10), justify=LEFT, bg='gray')
-    date_lbl.grid(row=2, column=0, pady=(10, 0), padx=7, sticky='e')
-    date = Entry(show_frame, width=60)
-    date.grid(row=2, column=1, pady=(10, 0), padx=7)
-
-    info_lbl = Label(show_frame, text='Info:',font=('Helvetica', 10),bg='gray')
-    info_lbl.grid(row=6, column=0, pady=(10, 0), padx=7, sticky='ne')
-    info = Text(show_frame, height=10, width=45)
-    info.grid(row=6, column=1, pady=(10, 0), padx=7)
-
-    # Create a Frame to hold navigation buttons (Previous and Next) and center it
-    button_frame = Frame(show_frame,bg='gray')
-    button_frame.grid(row=7, column=0, columnspan=2, pady=(20, 0))
-
-    # Create Previous and Next buttons side by side in the button frame
-    prev_btn = Button(button_frame, text='Previous',bg='green', command=prev_record)
-    next_btn = Button(button_frame, text='Next',bg='green', command=next_record)
-
-    prev_btn.pack(side=LEFT, padx=20)
-    next_btn.pack(side=RIGHT, padx=20)
-
-    # Create a label to show the current record index and total records, centered
-    status_label = Label(show_frame, text=f"Record {current_record_index + 1} of {total_records}",bg='gray')
-    status_label.grid(row=8, column=0, columnspan=2, pady=(20, 10))
-
-    # Close button centered below the navigation buttons
-    #close = Button(main_frame, text='Exit', command=show_frame.destroy)
-    #close.grid(row=9, column=0, columnspan=2, pady=(10, 0))
-
-    # Display the first record by default
-    display_record(records[current_record_index])
-
-    # Commit changes and close connection
-    conn.commit()
-    conn.close()
-
-'''
 
 def show():
     hide_all_frame()
@@ -1114,7 +614,7 @@ def show():
 
     info_lbl = Label(show_frame, text='Info:', font=('Helvetica', 10), bg='gray')
     info_lbl.grid(row=3, column=0, pady=(10, 0), padx=7, sticky='ne')
-    info = Text(show_frame, height=10, width=45)
+    info = Text(show_frame, height=25, width=45)
     info.grid(row=3, column=1, pady=(10, 0), padx=7)
 
     # Function to display the selected record's information
@@ -1397,22 +897,14 @@ edit_delete_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_
 password_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 show_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 
-find_lbl = customtkinter.CTkLabel(root,text = 'Find Customer')
-find_lbl.pack()
-find = Entry(root,textvariable=z, width=50)
-find.insert(0,'Enter customer name')
-find.configure(state='disabled')
-def on_click(event):  # this function for place holder in entry box
-    find.configure(state=NORMAL)
-    find.delete(0,END)
-find.bind('<Button-1>',on_click)
-find.pack(pady=10)
-btn_query = Button(root, text='Show records',bg='green', command=show)
-btn_query.pack()
+
+
+btn_query = CTkButton(root, text='Show records', command=show)
+btn_query.pack(pady=20)
 #btn_query = Button(root, text='Search-edit records', command=edit)
 #btn_query.pack(pady=10)
 
-search_btn = Button(root, text="Edit Customer",bg='green', command=search_window)
+search_btn = CTkButton(root, text="Edit Customer", command=search_window)
 search_btn.pack(pady=20)
 #lbl = customtkinter.CTkLabel(root, text='©arbtech')
 #lbl.pack(anchor='se')
