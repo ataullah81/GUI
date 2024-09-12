@@ -2,15 +2,15 @@ import customtkinter
 from tkinter import *
 from tkcalendar import *
 from datetime import datetime
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import sqlite3
 import os
+import json
 from random import randint
 import tkinter.messagebox
 import tkinter as tk
 from tkinter import Toplevel, StringVar, Entry, Button, Label, messagebox
 import babel.numbers
-
 
 customtkinter.set_appearance_mode('dark')
 customtkinter.set_default_color_theme('dark-blue')
@@ -22,51 +22,102 @@ icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
 root.iconbitmap(icon_path)
 root.geometry("800x900")
 
-
 my_menu = Menu(root)
 root.config(menu=my_menu)
 
-# Define the database name
-db_name = 'customer_book.db'
+# Path to settings file
+SETTINGS_FILE = 'db_settings.json'
+
+
+# Function to ask the user for the database directory and name
+def ask_database_info():
+    def select_directory():
+        db_directory = filedialog.askdirectory(title="Select Directory for Database")
+        if db_directory:
+            directory_label.config(text=f"Directory: {db_directory}")
+            return db_directory
+        return None
+
+    def submit():
+        db_name = db_name_entry.get().strip()
+        db_directory = directory_label.cget("text").replace("Directory: ", "").strip()
+
+        if not db_name:
+            messagebox.showerror("Input Error", "Please enter a database name.")
+            return
+        if not db_directory:
+            messagebox.showerror("Input Error", "Please select a directory for the database.")
+            return
+
+        db_name = db_name + ".db" if not db_name.endswith(".db") else db_name
+        db_path = os.path.join(db_directory, db_name)
+
+        # Save database settings
+        save_settings(db_path)
+        messagebox.showinfo("Success", f"Database path set to: {db_path}")
+        db_window.destroy()
+
+        # Now call the function to set up the database after the path is set
+        setup_database()
+
+    # Create the Tkinter window for asking database name and directory
+    db_window = Toplevel()
+    db_window.title("Database Configuration")
+
+    Label(db_window, text="Enter Database Name:").grid(row=0, column=0, padx=10, pady=10)
+    db_name_entry = Entry(db_window, width=40)
+    db_name_entry.grid(row=0, column=1, padx=10, pady=10)
+
+    select_dir_button = Button(db_window, text="Select Directory", command=select_directory)
+    select_dir_button.grid(row=1, column=0, padx=10, pady=10)
+
+    directory_label = Label(db_window, text="Directory: Not selected")
+    directory_label.grid(row=1, column=1, padx=10, pady=10)
+
+    submit_button = Button(db_window, text="Submit", command=submit)
+    submit_button.grid(row=2, column=0, columnspan=2, pady=10)
+
+
+# Function to save connection string to a settings file
+def save_settings(db_path):
+    settings = {"database_path": db_path}
+    with open(SETTINGS_FILE, 'w') as settings_file:
+        json.dump(settings, settings_file)
+
+
+# Function to load database path from settings file
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        with open(SETTINGS_FILE, 'r') as settings_file:
+            settings = json.load(settings_file)
+            return settings.get("database_path")
+    return None
+
 
 # Function to check if a table exists
-
-
 def table_exists(cursor, table_name):
     cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';")
     return cursor.fetchone() is not None
 
-# Check if the database file exists
 
+# Main function to handle database setup
+def setup_database():
+    # Load existing database path from settings file
+    db_path = load_settings()
 
-if not os.path.exists(db_name):
-    # Create the database if it doesn't exist
-    conn = sqlite3.connect(db_name)
-    c = conn.cursor()
+    if not db_path:
+        # Ask user for database name and directory if settings file doesn't exist
+        ask_database_info()
+        return  # Exit, database setup will be handled after the user input in `ask_database_info`
 
-    # Create the table
-    c.execute("""CREATE TABLE customer (
-                name text,
-                date text,
-                link_one text,
-                link_two text,
-                ftp_link text,
-                ftp_username text,
-                frp_password text,
-                info text,
-                modifydate text
-                )""")
+    # Check if the database file exists
+    if not os.path.exists(db_path):
+        # Create the database if it doesn't exist
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
 
-    conn.commit()
-    print("Database and table created.")
-else:
-    # If the database exists, check for the table
-    conn = sqlite3.connect(db_name)
-    c = conn.cursor()
-
-    if not table_exists(c, "customer"):
-        # If the table doesn't exist, create it
-        c.execute("""CREATE TABLE customer (
+        # Create the table
+        c.execute("""CREATE TABLE IF NOT EXISTS customer (
                     name text,
                     date text,
                     link_one text,
@@ -77,50 +128,101 @@ else:
                     info text,
                     modifydate text
                     )""")
-        conn.commit()
-        print("Table created in existing database.")
-    else:
-        print("Table already exists, skipping creation.")
 
-# Close the connection
-conn.close()
+        conn.commit()
+        print("Database and table created.")
+    else:
+        # If the database exists, check for the table
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+
+        if not table_exists(c, "customer"):
+            # If the table doesn't exist, create it
+            c.execute("""CREATE TABLE customer (
+                        name text,
+                        date text,
+                        link_one text,
+                        link_two text,
+                        ftp_link text,
+                        ftp_username text,
+                        frp_password text,
+                        info text,
+                        modifydate text
+                        )""")
+            conn.commit()
+            print("Table created in existing database.")
+        else:
+            print("Table already exists, skipping creation.")
+
+    # Close the connection
+    conn.close()
+
+
+# Call `setup_database` to ensure the database setup occurs after user input
+setup_database()
+
+#root.mainloop()
+
+
+# (Continue with the rest of the functions as in your original script...)
+
 
 import tkinter as tk
 from tkinter import Toplevel, StringVar, Entry, Label, Button, messagebox
 from datetime import datetime
 import sqlite3
 
+
+def load_settings():
+    # Load the database path from settings file
+    if os.path.exists('db_settings.json'):
+        with open('db_settings.json', 'r') as settings_file:
+            settings = json.load(settings_file)
+            return settings.get("database_path")
+    return None
+
+
 def search_window():
     hide_all_frame()
+
+    # Load the database path from settings file
+    db_path = load_settings()
+    if not db_path:
+        messagebox.showerror("Error", "Database path not set. Please configure the database.")
+        return
+
     # Create a new Toplevel window
-    #edit_edit_frame = Toplevel()
-    #edit_edit_frame.title("Search and Edit Customer")
     global edit_edit_frame
-    #edit_edit_frame = Frame(root)  # Assuming root is your main tkinter window
     edit_edit_frame = customtkinter.CTkFrame(master=root, width=800, height=600, fg_color='gray')
     edit_edit_frame.pack(pady=20, padx=60, fill='both', expand=True)
+
     # Create a StringVar for the search entry
     search_var = StringVar()
 
     # Create and place the widgets in the new window
-    search_label = Label(edit_edit_frame, text="Enter Customer Name:", font=('Helvetica', 10),bg='gray')
+    search_label = Label(edit_edit_frame, text="Enter Customer Name:", font=('Helvetica', 10), bg='gray')
     search_label.grid(row=0, column=0, padx=10, pady=10)
 
     search_entry = Entry(edit_edit_frame, textvariable=search_var, width=50, font=('Helvetica', 10))
     search_entry.grid(row=0, column=1, padx=10, pady=10)
 
-    search_button = Button(edit_edit_frame, text="Search",bg='green', command=lambda: perform_search(search_var.get(), edit_edit_frame))
+    search_button = Button(edit_edit_frame, text="Search", bg='green',
+                           command=lambda: perform_search(search_var.get(), edit_edit_frame))
     search_button.grid(row=0, column=2, padx=10, pady=10)
 
     def perform_search(customer_name, win):
+
+
         if not customer_name.strip():
             messagebox.showwarning("Input Error", "Please enter a customer name.")
             return
 
-        # Connect to the database and perform the search
-        conn = sqlite3.connect('customer_book.db')
+
+        # Connect to the database using the path from settings
+        conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
 
+        # Perform the search
         cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + customer_name + '%',))
         records = cur_sor.fetchall()
 
@@ -171,55 +273,62 @@ def search_window():
                 display_record(current_record_index)
 
         # Labels and Entry widgets for editing
-        Label(win, text="Customer Name:", font=('Helvetica', 10),bg='gray').grid(row=2, column=0, padx=10, pady=5, sticky='e')
+        Label(win, text="Customer Name:", font=('Helvetica', 10), bg='gray').grid(row=2, column=0, padx=10, pady=5,
+                                                                                  sticky='e')
         name_entry = Entry(win, width=50, font=('Helvetica', 10))
         name_entry.grid(row=2, column=1, padx=10, pady=5)
 
-        Label(win, text="Date:", font=('Helvetica', 10),bg='gray').grid(row=3, column=0, padx=10, pady=5, sticky='e')
+        Label(win, text="Date:", font=('Helvetica', 10), bg='gray').grid(row=3, column=0, padx=10, pady=5, sticky='e')
         date_entry = Entry(win, width=50, font=('Helvetica', 10))
         date_entry.grid(row=3, column=1, padx=10, pady=5)
 
-        Label(win, text="Link TCS2:", font=('Helvetica', 10),bg='gray').grid(row=4, column=0, padx=10, pady=5, sticky='e')
+        Label(win, text="Link TCS2:", font=('Helvetica', 10), bg='gray').grid(row=4, column=0, padx=10, pady=5,
+                                                                              sticky='e')
         link1_entry = Entry(win, width=50, font=('Helvetica', 10))
         link1_entry.grid(row=4, column=1, padx=10, pady=5)
 
-        Label(win, text="Link TCS3:", font=('Helvetica', 10),bg='gray').grid(row=5, column=0, padx=10, pady=5, sticky='e')
+        Label(win, text="Link TCS3:", font=('Helvetica', 10), bg='gray').grid(row=5, column=0, padx=10, pady=5,
+                                                                              sticky='e')
         link2_entry = Entry(win, width=50, font=('Helvetica', 10))
         link2_entry.grid(row=5, column=1, padx=10, pady=5)
 
-        Label(win, text="FTP Link:", font=('Helvetica', 10),bg='gray').grid(row=6, column=0, padx=10, pady=5, sticky='e')
+        Label(win, text="FTP Link:", font=('Helvetica', 10), bg='gray').grid(row=6, column=0, padx=10, pady=5,
+                                                                             sticky='e')
         ftp_link_entry = Entry(win, width=50, font=('Helvetica', 10))
         ftp_link_entry.grid(row=6, column=1, padx=10, pady=5)
 
-        Label(win, text="FTP Username:", font=('Helvetica', 10),bg='gray').grid(row=7, column=0, padx=10, pady=5, sticky='e')
+        Label(win, text="FTP Username:", font=('Helvetica', 10), bg='gray').grid(row=7, column=0, padx=10, pady=5,
+                                                                                 sticky='e')
         ftp_username_entry = Entry(win, width=50, font=('Helvetica', 10))
         ftp_username_entry.grid(row=7, column=1, padx=10, pady=5)
 
-        Label(win, text="FTP Password:", font=('Helvetica', 10),bg='gray').grid(row=8, column=0, padx=10, pady=5, sticky='e')
+        Label(win, text="FTP Password:", font=('Helvetica', 10), bg='gray').grid(row=8, column=0, padx=10, pady=5,
+                                                                                 sticky='e')
         ftp_pass_entry = Entry(win, width=50, font=('Helvetica', 10))
         ftp_pass_entry.grid(row=8, column=1, padx=10, pady=5)
 
-        Label(win, text="Notes:", font=('Helvetica', 10),bg='gray').grid(row=9, column=0, padx=10, pady=5, sticky='ne')
+        Label(win, text="Notes:", font=('Helvetica', 10), bg='gray').grid(row=9, column=0, padx=10, pady=5, sticky='ne')
         notes_entry = tk.Text(win, width=50, height=15, font=('Helvetica', 10))
         notes_entry.grid(row=9, column=1, padx=10, pady=5)
 
         # Create a Frame to hold both buttons and center them
-        button_frame = Frame(win,bg='gray')
+        button_frame = Frame(win, bg='gray')
         button_frame.grid(row=10, column=0, columnspan=2, pady=(10, 0), padx=7)
 
         # Navigation buttons - Previous and Next side by side in the Frame
-        prev_button = Button(button_frame, text="Previous",bg='green', command=prev_record, font=('Helvetica', 10))
-        next_button = Button(button_frame, text="Next",bg='green', command=next_record, font=('Helvetica', 10))
+        prev_button = Button(button_frame, text="Previous", bg='green', command=prev_record, font=('Helvetica', 10))
+        next_button = Button(button_frame, text="Next", bg='green', command=next_record, font=('Helvetica', 10))
 
         prev_button.pack(side=tk.LEFT, padx=10)
         next_button.pack(side=tk.RIGHT, padx=10)
 
         # Create a label to show the current record index and total records
-        status_label = Label(win, text=f"Record 1 of {total_records}", font=('Helvetica', 10),bg='gray')
+        status_label = Label(win, text=f"Record 1 of {total_records}", font=('Helvetica', 10), bg='gray')
         status_label.grid(row=12, column=0, columnspan=2, padx=10, pady=10)
 
         def save_edits():
-            conn = sqlite3.connect('customer_book.db')
+
+            conn = sqlite3.connect(db_path)
             cur_sor = conn.cursor()
 
             # Get the current date and time
@@ -252,22 +361,22 @@ def search_window():
             ))
 
             conn.commit()
-            messagebox.showinfo("Success", "Record updated successfully.")
+            messagebox.showinfo("Success", "Record updated successfully")
             conn.close()
             win.destroy()  # Close the search window after saving
 
-        # Save button to update the record
-        save_button = Button(win, text="Save Changes", command=save_edits,bg='green', font=('Helvetica', 10))
-        #save_button.grid(row=10, column=1, columnspan=2, pady=10)
-        save_button.grid(row=10, column=1, columnspan=2, pady=(10, 0), padx=7)
+            # Save button to update the record
 
+        save_button = Button(win, text="Save Changes", command=save_edits, bg='green', font=('Helvetica', 10))
+        # save_button.grid(row=10, column=1, columnspan=2, pady=10)
+        save_button.grid(row=10, column=1, columnspan=2, pady=(10, 0), padx=7)
 
         # Display the first record by default
         display_record(current_record_index)
 
         conn.close()
 
-# Assuming the root window is already created and there is a button to call search_window
+            # Assuming the root window is already created and there is a button to call search_window
 
 
 
@@ -288,6 +397,7 @@ def about():
 
 # Find function not in use
 def find():
+
     hide_all_frame()
     find_window = tk.Tk()
     find_window.title('Find Customer')
@@ -376,10 +486,16 @@ def add_new():
     customer_info = Text(file_add_frame, height=5,width=52)
     customer_info.grid(row=7, column=2, pady=(10, 0), padx=7, sticky='w')
 
+    # Load the database path from settings file
 
 
     def submit():
-        conn =sqlite3.connect('customer_book.db')
+        db_path = load_settings()
+        if not db_path:
+            messagebox.showerror("Error", "Database path not set. Please configure the database.")
+            return
+
+        conn =sqlite3.connect(db_path)
         cursor = conn.cursor()
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         try:
@@ -486,13 +602,18 @@ def update():
         customer_info.delete('1.0', END)
 def show():
     hide_all_frame()
+    # Load the database path from settings file
+    db_path = load_settings()
+    if not db_path:
+        messagebox.showerror("Error", "Database path not set. Please configure the database.")
+        return
     # Check if the user input is empty
     if not z.get().strip():
         messagebox.showwarning("Input Error", "Please enter a customer name.")
         return  # Exit the function if input is empty
 
     # Create database connection
-    conn = sqlite3.connect('customer_book.db')
+    conn = sqlite3.connect(db_path)
     # Create cursor
     cur_sor = conn.cursor()
 
@@ -647,13 +768,19 @@ def fetch():
     records_listbox.grid(row=2, column=2, pady=(10, 0), padx=7)
 
     def search_records():
+        # Load the database path from settings file
+        db_path = load_settings()
+        if not db_path:
+            messagebox.showerror("Error", "Database path not set. Please configure the database.")
+            return
+
         customer_name = y.get()
 
         if not customer_name:
             messagebox.showwarning("Input Error", "Please enter a customer name.")
             return
 
-        conn = sqlite3.connect('customer_book.db')
+        conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
 
         # Find matching records with a partial search
@@ -678,6 +805,11 @@ def fetch():
     search_button.grid(row=0, column=3, padx=10)
 
     def delete():
+        # Load the database path from settings file
+        db_path = load_settings()
+        if not db_path:
+            messagebox.showerror("Error", "Database path not set. Please configure the database.")
+            return
         try:
             # Get selected record
             selected_index = records_listbox.curselection()
@@ -692,7 +824,7 @@ def fetch():
             confirm = messagebox.askyesno("Delete Confirmation", f"Are you sure you want to delete record ID {record_id}?")
 
             if confirm:  # If user clicks "Yes"
-                conn = sqlite3.connect('customer_book.db')
+                conn = sqlite3.connect(db_path)
                 cur_sor = conn.cursor()
 
                 # Delete the record with the selected ID
