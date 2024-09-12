@@ -231,6 +231,8 @@ def search_window():
             record = records[index]
             name_entry.delete(0, tk.END)
             name_entry.insert(0, record[0])
+            subject_entry.delete(0, tk.END)
+            subject_entry.insert(0, record[1])  # Assuming date is in index 2
             date_entry.delete(0, tk.END)
             date_entry.insert(0, record[2])  # Assuming date is in index 2
             notes_entry.delete('1.0', tk.END)
@@ -259,10 +261,15 @@ def search_window():
         name_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
         name_entry.grid(row=2, column=1, padx=10, pady=5)
 
-        Label(edit_edit_frame, text="Date:", font=('Helvetica', 10), bg='gray').grid(row=3, column=0, padx=10, pady=5,
+        Label(edit_edit_frame, text="Subject:", font=('Helvetica', 10), bg='gray').grid(row=3, column=0, padx=10, pady=5,
+                                                                                     sticky='e')
+        subject_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
+        subject_entry.grid(row=3, column=1, padx=10, pady=5)
+
+        Label(edit_edit_frame, text="Date:", font=('Helvetica', 10), bg='gray').grid(row=4, column=0, padx=10, pady=5,
                                                                                      sticky='e')
         date_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
-        date_entry.grid(row=3, column=1, padx=10, pady=5)
+        date_entry.grid(row=4, column=1, padx=10, pady=5)
 
         Label(edit_edit_frame, text="Notes:", font=('Helvetica', 10), bg='gray').grid(row=9, column=0, padx=10, pady=5,
                                                                                       sticky='ne')
