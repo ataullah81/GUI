@@ -119,6 +119,7 @@ def setup_database():
         # Create the table
         c.execute("""CREATE TABLE IF NOT EXISTS customer (
                     name text,
+                    subject text,
                     date text,
                     info text,
                     modifydate text
@@ -135,6 +136,7 @@ def setup_database():
             # If the table doesn't exist, create it
             c.execute("""CREATE TABLE customer (
                         name text,
+                        subject text,
                         date text,
                         info text,
                         modifydate text
@@ -186,38 +188,37 @@ def search_window():
     edit_edit_frame = customtkinter.CTkFrame(master=root, width=800, height=600, fg_color='gray')
     edit_edit_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
-    # Create a StringVar for the search entry
-    search_var = StringVar()
+    search_name_var = StringVar()
+    search_subject_var = StringVar()
 
-    # Create and place the widgets in the new window
     search_label = Label(edit_edit_frame, text="Enter Customer Name:", font=('Helvetica', 10), bg='gray')
     search_label.grid(row=0, column=0, padx=10, pady=10)
-
-    search_entry = Entry(edit_edit_frame, textvariable=search_var, width=50, font=('Helvetica', 10))
+    search_entry = Entry(edit_edit_frame, textvariable=search_name_var, width=50, font=('Helvetica', 10))
     search_entry.grid(row=0, column=1, padx=10, pady=10)
 
+    subject_label = Label(edit_edit_frame, text="Enter Subject:", font=('Helvetica', 10), bg='gray')
+    subject_label.grid(row=1, column=0, padx=10, pady=10)
+    subject_entry = Entry(edit_edit_frame, textvariable=search_subject_var, width=50, font=('Helvetica', 10))
+    subject_entry.grid(row=1, column=1, padx=10, pady=10)
+
     search_button = Button(edit_edit_frame, text="Search", bg='green',
-                           command=lambda: perform_search(search_var.get(), edit_edit_frame))
+                           command=lambda: perform_search(search_name_var.get(), search_subject_var.get()))
     search_button.grid(row=0, column=2, padx=10, pady=10)
 
-    def perform_search(customer_name, win):
-
-
-        if not customer_name.strip():
-            messagebox.showwarning("Input Error", "Please enter a customer name.")
+    def perform_search(customer_name, subject):
+        if not customer_name.strip() or not subject.strip():
+            messagebox.showwarning("Input Error", "Please enter both customer name and subject.")
             return
 
-
-        # Connect to the database using the path from settings
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
 
-        # Perform the search
-        cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + customer_name + '%',))
+        cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE",
+                        ('%' + customer_name + '%', '%' + subject + '%'))
         records = cur_sor.fetchall()
 
         if not records:
-            messagebox.showinfo("No Results", "No customer found with that name.")
+            messagebox.showinfo("No Results", "No customer found with that name and subject.")
             conn.close()
             return
 
@@ -231,9 +232,9 @@ def search_window():
             name_entry.delete(0, tk.END)
             name_entry.insert(0, record[0])
             date_entry.delete(0, tk.END)
-            date_entry.insert(0, record[8])
+            date_entry.insert(0, record[2])  # Assuming date is in index 2
             notes_entry.delete('1.0', tk.END)
-            notes_entry.insert(tk.END, record[7])
+            notes_entry.insert(tk.END, record[3])  # Assuming info is in index 3
 
             # Update the status label to show the current record number and total records
             status_label.config(text=f"Record {index + 1} of {total_records}")
@@ -252,23 +253,24 @@ def search_window():
                 current_record_index -= 1
                 display_record(current_record_index)
 
-        # Labels and Entry widgets for editing
-        Label(win, text="Customer Name:", font=('Helvetica', 10), bg='gray').grid(row=2, column=0, padx=10, pady=5,
-                                                                                  sticky='e')
-        name_entry = Entry(win, width=50, font=('Helvetica', 10))
+        # Labels and Entry widgets for editing (using edit_edit_frame instead of win)
+        Label(edit_edit_frame, text="Customer Name:", font=('Helvetica', 10), bg='gray').grid(row=2, column=0, padx=10,
+                                                                                              pady=5, sticky='e')
+        name_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
         name_entry.grid(row=2, column=1, padx=10, pady=5)
 
-        Label(win, text="Date:", font=('Helvetica', 10), bg='gray').grid(row=3, column=0, padx=10, pady=5, sticky='e')
-        date_entry = Entry(win, width=50, font=('Helvetica', 10))
+        Label(edit_edit_frame, text="Date:", font=('Helvetica', 10), bg='gray').grid(row=3, column=0, padx=10, pady=5,
+                                                                                     sticky='e')
+        date_entry = Entry(edit_edit_frame, width=50, font=('Helvetica', 10))
         date_entry.grid(row=3, column=1, padx=10, pady=5)
 
-
-        Label(win, text="Notes:", font=('Helvetica', 10), bg='gray').grid(row=9, column=0, padx=10, pady=5, sticky='ne')
-        notes_entry = tk.Text(win, width=50, height=15, font=('Helvetica', 10))
+        Label(edit_edit_frame, text="Notes:", font=('Helvetica', 10), bg='gray').grid(row=9, column=0, padx=10, pady=5,
+                                                                                      sticky='ne')
+        notes_entry = tk.Text(edit_edit_frame, width=50, height=15, font=('Helvetica', 10))
         notes_entry.grid(row=9, column=1, padx=10, pady=5)
 
         # Create a Frame to hold both buttons and center them
-        button_frame = Frame(win, bg='gray')
+        button_frame = Frame(edit_edit_frame, bg='gray')
         button_frame.grid(row=10, column=0, columnspan=2, pady=(10, 0), padx=7)
 
         # Navigation buttons - Previous and Next side by side in the Frame
@@ -279,11 +281,10 @@ def search_window():
         next_button.pack(side=tk.RIGHT, padx=10)
 
         # Create a label to show the current record index and total records
-        status_label = Label(win, text=f"Record 1 of {total_records}", font=('Helvetica', 10), bg='gray')
+        status_label = Label(edit_edit_frame, text=f"Record 1 of {total_records}", font=('Helvetica', 10), bg='gray')
         status_label.grid(row=12, column=0, columnspan=2, padx=10, pady=10)
 
         def save_edits():
-
             conn = sqlite3.connect(db_path)
             cur_sor = conn.cursor()
 
@@ -295,27 +296,25 @@ def search_window():
                 UPDATE customer SET 
                     name = ?, 
                     date = ?, 
-                    
                     info = ?, 
                     MODIFYDATE = ?
-                WHERE name = ?
+                WHERE name = ? AND subject = ?
             """, (
                 name_entry.get(),
                 date_entry.get(),
-                notes_entry.get("1.0", tk.END).strip(),  # Get the content of the Text widget
-                modify_date,  # Set the modify date to the current time
-                records[current_record_index][0]  # The original customer name to identify the record
+                notes_entry.get("1.0", tk.END).strip(),
+                modify_date,
+                records[current_record_index][0],  # The original customer name to identify the record
+                records[current_record_index][1],  # The original subject to identify the record
             ))
 
             conn.commit()
             messagebox.showinfo("Success", "Record updated successfully")
             conn.close()
-            win.destroy()  # Close the search window after saving
 
-            # Save button to update the record
-
-        save_button = Button(win, text="Save Changes", command=save_edits, bg='green', font=('Helvetica', 10))
-        # save_button.grid(row=10, column=1, columnspan=2, pady=10)
+        # Save button to update the record
+        save_button = Button(edit_edit_frame, text="Save Changes", command=save_edits, bg='green',
+                             font=('Helvetica', 10))
         save_button.grid(row=10, column=1, columnspan=2, pady=(10, 0), padx=7)
 
         # Display the first record by default
@@ -323,7 +322,7 @@ def search_window():
 
         conn.close()
 
-            # Assuming the root window is already created and there is a button to call search_window
+        # Assuming the root window is already created and there is a button to call search_window
 
 
 
@@ -383,6 +382,7 @@ def add_new():
 
     # create global variables for text boxes
     global customer_name
+    global customer_subject
     global customer_date
     global customer_info
 
@@ -392,13 +392,18 @@ def add_new():
     customer_name = Entry(file_add_frame, width=50)
     customer_name.grid(row=0, column=2, pady=(10, 0), padx=7,sticky='w')
 
+    customer_subject_lbl = Label(file_add_frame, text='Subject:', font=('Helvetica', 10), bg='gray')
+    customer_subject_lbl.grid(row=1, column=1, pady=(10, 0), padx=7, sticky='w')
+    customer_subject = Entry(file_add_frame, width=50)
+    customer_subject.grid(row=1, column=2, pady=(10, 0), padx=7, sticky='w')
+
     customer_date_lbl = Label(file_add_frame, text='Date: ', font=('Helvetica', 10),bg='gray',justify=LEFT)
-    customer_date_lbl.grid(row=1, column=1,pady=(10, 0), padx=7,sticky='w')
+    customer_date_lbl.grid(row=2, column=1,pady=(10, 0), padx=7,sticky='w')
     customer_date = DateEntry(file_add_frame,date_pattern='dd-mm-yyyy')
-    customer_date.grid(row=1, column=2, pady=(10, 0), padx=7,sticky='w')
+    customer_date.grid(row=2, column=2, pady=(10, 0), padx=7,sticky='w')
+
     customer_info_lbl = Label(file_add_frame, text='Notes: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
     customer_info_lbl.grid(row=7, column=1, pady=(10, 0), padx=7, sticky='w')
-    #customer_info = Entry(file_add_frame, width=70)
     customer_info = Text(file_add_frame, height=5,width=52)
     customer_info.grid(row=7, column=2, pady=(10, 0), padx=7, sticky='w')
 
@@ -415,19 +420,15 @@ def add_new():
         cursor = conn.cursor()
         current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         try:
-            #cursor.execute("SELECT name FROM customer where name = ?",(customer_name.get(),))
-            cursor.execute("SELECT name FROM customer WHERE LOWER(name) = LOWER(?)", (customer_name.get(),))
+            cursor.execute(
+                "SELECT name, subject FROM customer WHERE LOWER(name) = LOWER(?) AND LOWER(subject) = LOWER(?)",
+                (customer_name.get(), customer_subject.get()))
             if cursor.fetchone():
-                messagebox.showerror("Error", "Customer name already exists!")
+                messagebox.showerror("Error", "Customer with this subject already exists!")
             else:
-                cursor.execute("INSERT INTO customer VALUES (:name, :date, :notes, :modifydate)",
-                            {
-                                'name':customer_name.get(),
-                                'date':customer_date.get(),
-                                'notes':customer_info.get("1.0",'end-1c'),
-                                'modifydate':current_date
-                            })
-                #Commit changes
+                cursor.execute("INSERT INTO customer VALUES (?, ?, ?, ?, ?)",
+                               (customer_name.get(), customer_subject.get(), customer_date.get(),
+                                customer_info.get("1.0", 'end-1c'), current_date))
                 conn.commit()
                 messagebox.showinfo("Success", "Record added successfully")
         except sqlite3.Error as e:
@@ -435,13 +436,13 @@ def add_new():
             #Close connection
         finally:
             conn.close()
-            #Clear text boxes
             customer_name.delete(0, END)
-            customer_date.delete(0,END)
-            customer_info.delete('1.0',END)
+            customer_subject.delete(0, END)
+            customer_date.delete(0, END)
+            customer_info.delete('1.0', END)
 
-    submit_btn = Button(file_add_frame, text='Save',bg='green',font=('Helvetica', 10),command=submit)
-    submit_btn.grid(row=8,column=2,pady=(10, 0), padx=7)
+    submit_btn = Button(file_add_frame, text='Save', bg='green', font=('Helvetica', 10), command=submit)
+    submit_btn.grid(row=4, column=2, pady=(10, 0), padx=7)
 #Hide all frame function
 def hide_all_frame():
     file_add_frame.pack_forget()
