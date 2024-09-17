@@ -15,6 +15,14 @@ import tkinter as tk
 from tkinter import Toplevel, StringVar, Entry, Button, Label, messagebox
 import babel.numbers
 
+def CenterDisplay(Screen: CTk, width: int, height: int, scale_factor: float = 1.0):
+    """Centers the window to the main display/monitor"""
+    screen_width = Screen.winfo_screenwidth()
+    screen_height = Screen.winfo_screenheight()
+    x = int(((screen_width / 2) - (width / 2)) * scale_factor)
+    y = int(((screen_height / 2) - (height / 1.9)) * scale_factor)
+    return f"{width}x{height}+{x}+{y}"
+
 customtkinter.set_appearance_mode('dark')
 customtkinter.set_default_color_theme('dark-blue')
 
@@ -23,7 +31,8 @@ root.title('Ticket Info Box')
 # Use an absolute path to the icon file
 icon_path = os.path.join(os.path.dirname(__file__), 'report.ico')
 root.iconbitmap(icon_path)
-root.geometry("900x950")
+root.geometry(CenterDisplay(root,900, 950, root._get_window_scaling()))
+
 
 
 my_menu = Menu(root)
@@ -309,7 +318,7 @@ def search_window():
     date_entry = CTkEntry(edit_edit_frame, width=350, font=('Helvetica', 15))
     date_entry.grid(row=5, column=1, padx=10, pady=5)
 
-    CTkLabel(edit_edit_frame, text="Notes:", font=('Helvetica', 15)).grid(row=6, column=0, padx=10, pady=5, sticky='ne')
+    CTkLabel(edit_edit_frame, text="Notes:", font=('Helvetica', 15)).grid(row=6, column=0, padx=10, pady=5, sticky='e')
     notes_entry = CTkTextbox(edit_edit_frame, width=350, height=400, font=('Helvetica', 15))
     notes_entry.grid(row=6, column=1, padx=10, pady=5)
 
