@@ -10,10 +10,202 @@ import os
 import json
 from random import randint
 import tkinter.messagebox
-
+import bcrypt  # Library for password hashing
 import tkinter as tk
 from tkinter import Toplevel, StringVar, Entry, Button, Label, messagebox
 import babel.numbers
+
+
+def CenterDisplay(Screen: CTk, width: int, height: int, scale_factor: float = 1.0):
+    """Centers the window to the main display/monitor"""
+    screen_width = Screen.winfo_screenwidth()
+    screen_height = Screen.winfo_screenheight()
+    x = int(((screen_width / 2) - (width / 2)) * scale_factor)
+    y = int(((screen_height / 2) - (height / 1.9)) * scale_factor)
+    return f"{width}x{height}+{x}+{y}"
+
+
+customtkinter.set_appearance_mode('dark')
+customtkinter.set_default_color_theme('dark-blue')
+
+# Initialize the main window
+root = customtkinter.CTk()
+root.title('Ticket Info Box')
+
+# Path to settings file
+SETTINGS_FILE = 'db_settings.json'
+
+
+# Database setup function to create users and customer tables
+def setup_database():
+    # Load existing database path from settings file
+    db_path = load_settings()
+
+    if not db_path:
+        # Ask user for database name and directory if settings file doesn't exist
+        ask_database_info()
+        return  # Exit, database setup will be handled after the user input in `ask_database_info`
+
+    # Check if the database file exists
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+
+    # Create the users table (for login)
+    c.execute("""CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                password TEXT
+                )""")
+
+    # Create the customer table (your original program)
+    c.execute("""CREATE TABLE IF NOT EXISTS customer (
+                name TEXT,
+                subject TEXT,
+                date TEXT,
+                info TEXT,
+                modifydate TEXT
+                )""")
+
+    # Add a default admin user if no users exist
+    c.execute("SELECT COUNT(*) FROM users")
+    if c.fetchone()[0] == 0:
+        hashed_password = bcrypt.hashpw("admin123".encode(), bcrypt.gensalt())
+        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", ("admin", hashed_password))
+        conn.commit()
+
+    conn.close()
+
+
+# Function to load database path from settings file
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        with open(SETTINGS_FILE, 'r') as settings_file:
+            settings = json.load(settings_file)
+            return settings.get("database_path")
+    return None
+
+
+# Function to ask for the database info
+def ask_database_info():
+    def select_directory():
+        db_directory = filedialog.askdirectory(title="Select Directory for Database")
+        if db_directory:
+            directory_label.config(text=f"Directory: {db_directory}")
+            return db_directory
+        return None
+
+    def submit():
+        db_name = db_name_entry.get().strip()
+        db_directory = directory_label.cget("text").replace("Directory: ", "").strip()
+
+        if not db_name:
+            messagebox.showerror("Input Error", "Please enter a database name.")
+            return
+        if not db_directory:
+            messagebox.showerror("Input Error", "Please select a directory for the database.")
+            return
+
+        db_name = db_name + ".db" if not db_name.endswith(".db") else db_name
+        db_path = os.path.join(db_directory, db_name)
+
+        # Save database settings
+        save_settings(db_path)
+        messagebox.showinfo("Success", f"Database path set to: {db_path}")
+        db_window.destroy()
+
+        # Now call the function to set up the database after the path is set
+        setup_database()
+
+    # Create the Tkinter window for asking database name and directory
+    db_window = Toplevel()
+    db_window.title("Database Configuration")
+    db_window.wm_attributes("-topmost", 1)
+
+    Label(db_window, text="Enter Database Name:").grid(row=0, column=0, padx=10, pady=10)
+    db_name_entry = Entry(db_window, width=40)
+    db_name_entry.grid(row=0, column=1, padx=10, pady=10)
+
+    select_dir_button = Button(db_window, text="Select Directory", command=select_directory)
+    select_dir_button.grid(row=1, column=0, padx=10, pady=10)
+
+    directory_label = Label(db_window, text="Directory: Not selected")
+    directory_label.grid(row=1, column=1, padx=10, pady=10)
+
+    submit_button = Button(db_window, text="Submit", command=submit)
+    submit_button.grid(row=2, column=0, columnspan=2, pady=10)
+
+
+# Function to save connection string to a settings file
+def save_settings(db_path):
+    settings = {"database_path": db_path}
+    with open(SETTINGS_FILE, 'w') as settings_file:
+        json.dump(settings, settings_file)
+
+
+# Login window
+def login_window():
+    login = Toplevel()
+    login.title("Login")
+    login.geometry(CenterDisplay(login, 400, 250))
+
+    Label(login, text="Username:").pack(pady=10)
+    username_entry = customtkinter.CTkEntry(login, width=250)
+    username_entry.pack(pady=5)
+
+    Label(login, text="Password:").pack(pady=10)
+    password_entry = customtkinter.CTkEntry(login, width=250, show='*')
+    password_entry.pack(pady=5)
+
+    def authenticate():
+        username = username_entry.get().strip()
+        password = password_entry.get().strip()
+
+        db_path = load_settings()
+        if not db_path:
+            messagebox.showerror("Error", "Database path not set. Please configure the database.")
+            return
+
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT password FROM users WHERE username = ?", (username,))
+        result = cursor.fetchone()
+        conn.close()
+
+        if result and bcrypt.checkpw(password.encode(), result[0]):
+            messagebox.showinfo("Login Success", "You have logged in successfully.")
+            login.destroy()  # Close the login window
+            root.deiconify()  # Show the main window
+        else:
+            messagebox.showerror("Login Failed", "Invalid username or password.")
+
+    Button(login, text="Login", command=authenticate).pack(pady=20)
+
+root.withdraw()  # Hide the main window
+login_window()   # Show the login window
+root.mainloop()  # Start the main event loop
+
+'''
+# Main application window (after login)
+def main_application():
+    hide_all_frame()
+    root.geometry(CenterDisplay(root, 900, 950))
+
+    # Example of main content - You can add your original content here
+    btn_query = CTkButton(root, text='Show records', command=show)
+    btn_query.pack(pady=20)
+
+    search_btn = CTkButton(root, text="Edit Customer", command=search_window)
+    search_btn.pack(pady=20)
+'''
+def main_application():
+    hide_all_frame()
+    main_frame.pack(pady=20, padx=60, fill='both', expand=True)
+    # Example of main content - Add buttons and functions here
+    btn_query = CTkButton(main_frame, text='Show records', command=show)
+    btn_query.pack(pady=20)
+    search_btn = CTkButton(main_frame, text="Edit Customer", command=search_window)
+    search_btn.pack(pady=20)
+
 
 def CenterDisplay(Screen: CTk, width: int, height: int, scale_factor: float = 1.0):
     """Centers the window to the main display/monitor"""
@@ -200,7 +392,7 @@ def search_window():
     global edit_edit_frame
     edit_edit_frame = customtkinter.CTkFrame(master=root, width=800, height=600, fg_color='gray')
     edit_edit_frame.pack(pady=20, padx=60, fill='both', expand=True)
-
+    edit_edit_frame.grid_columnconfigure(1, weight=1) # The second column (index 1) has more weight
     # Function to load all distinct customer names from the database
     def load_customer_names():
         conn = sqlite3.connect(db_path)
@@ -246,7 +438,7 @@ def search_window():
     customer_label.grid(row=0, column=0, padx=10, pady=10)
 
     customer_dropdown = customtkinter.CTkOptionMenu(edit_edit_frame, width=250, values=customer_names_list, variable=customer_name_var)
-    customer_dropdown.grid(row=0, column=1, padx=10, pady=10)
+    customer_dropdown.grid(row=0, column=1, padx=(10,0), pady=10, sticky="nsew")
 
     # Subject Dropdown Menu (Initially empty until customer is selected)
     subject_var = StringVar(edit_edit_frame)
@@ -255,7 +447,7 @@ def search_window():
     subject_label.grid(row=1, column=0, padx=10, pady=10, sticky='e')
 
     subject_dropdown = customtkinter.CTkOptionMenu(edit_edit_frame, width=250, values=[], variable=subject_var)
-    subject_dropdown.grid(row=1, column=1, padx=10, pady=10)
+    subject_dropdown.grid(row=1, column=1, padx=(10,0), pady=10, sticky="nsew")
 
     # Subject Search Box
     subject_search_var = StringVar()
@@ -264,7 +456,7 @@ def search_window():
     subject_search_label.grid(row=2, column=0, padx=10, pady=10, sticky='e')
 
     subject_search_entry = CTkEntry(edit_edit_frame, textvariable=subject_search_var, width=250, font=('Helvetica', 15))
-    subject_search_entry.grid(row=2, column=1, padx=10, pady=10)
+    subject_search_entry.grid(row=2, column=1, padx=(10,0), pady=5, sticky="nsew")
 
     # Function to update the subjects dropdown based on the selected customer and search term
     def update_subjects_dropdown(selected_customer_name):
@@ -308,19 +500,19 @@ def search_window():
     # Entry fields for editing (defined outside perform_search so accessible globally)
     CTkLabel(edit_edit_frame, text="Customer Name:", font=('Helvetica', 15)).grid(row=3, column=0, padx=10, pady=5, sticky='e')
     name_entry = CTkEntry(edit_edit_frame, width=250, font=('Helvetica', 15))
-    name_entry.grid(row=3, column=1, padx=10, pady=5)
+    name_entry.grid(row=3, column=1, padx=(10,0), pady=5, sticky="nsew")
 
     CTkLabel(edit_edit_frame, text="Subject:", font=('Helvetica', 15)).grid(row=4, column=0, padx=10, pady=5, sticky='e')
     subject_entry = CTkEntry(edit_edit_frame, width=350, font=('Helvetica', 15))
-    subject_entry.grid(row=4, column=1, padx=10, pady=5)
+    subject_entry.grid(row=4, column=1, padx=(10,0), pady=5, sticky="nsew")
 
     CTkLabel(edit_edit_frame, text="Date:", font=('Helvetica', 15)).grid(row=5, column=0, padx=10, pady=5, sticky='e')
     date_entry = CTkEntry(edit_edit_frame, width=350, font=('Helvetica', 15))
-    date_entry.grid(row=5, column=1, padx=10, pady=5)
+    date_entry.grid(row=5, column=1, padx=(10,0), pady=5, sticky="nsew")
 
     CTkLabel(edit_edit_frame, text="Notes:", font=('Helvetica', 15)).grid(row=6, column=0, padx=10, pady=5, sticky='e')
     notes_entry = CTkTextbox(edit_edit_frame, width=350, height=400, font=('Helvetica', 15))
-    notes_entry.grid(row=6, column=1, padx=10, pady=5)
+    notes_entry.grid(row=6, column=1, padx=(10,0), pady=5, sticky="nsew")
 
     # Success message label (initially empty)
     success_label = CTkLabel(edit_edit_frame, text="", font=('Helvetica', 10))
@@ -586,7 +778,7 @@ def add_new():
     submit_btn = Button(file_add_frame, text='Save', bg='green', font=('Helvetica', 10), command=submit)
     submit_btn.grid(row=5, column=2, pady=(10, 0), padx=7)
 
-
+'''
 #Hide all frame function
 def hide_all_frame():
     file_add_frame.pack_forget()
@@ -595,6 +787,10 @@ def hide_all_frame():
     password_frame.pack_forget()
     main_frame.pack_forget()
     show_frame.pack_forget()
+'''
+def hide_all_frame():
+    for frame in [file_add_frame, edit_edit_frame, edit_delete_frame, password_frame, main_frame, show_frame]:
+        frame.pack_forget()  # Hide all frames before switching
 
 def show():
     hide_all_frame()
@@ -647,7 +843,7 @@ def show():
     global show_frame
     show_frame = customtkinter.CTkFrame(master=root, width=800, height=600, fg_color='gray')
     show_frame.pack(pady=20, padx=60, fill='both', expand=True)
-
+    show_frame.grid_columnconfigure(1, weight=1)  # The second column (index 1) has more weight
     # Customer Name Dropdown Menu
     customer_name_var = StringVar(show_frame)
     customer_name_var.set(customer_names_list[0])  # Set the first customer as default
@@ -656,7 +852,7 @@ def show():
     name_lbl.grid(row=0, column=0, pady=(10, 0), padx=7, sticky='e')
 
     customer_dropdown = customtkinter.CTkOptionMenu(show_frame, width=250, values=customer_names_list, variable=customer_name_var)
-    customer_dropdown.grid(row=0, column=1, pady=(10, 0), padx=7)
+    customer_dropdown.grid(row=0, column=1, padx=(10, 0), pady=5, sticky="nsew")
 
     # Subject Search Box
     search_var = StringVar(show_frame)
@@ -668,12 +864,12 @@ def show():
     sub_lbl.grid(row=1, column=0, pady=(10, 0), padx=7, sticky='e')
 
     subject_dropdown = customtkinter.CTkOptionMenu(show_frame, width=250, values=[], variable=subject_var)
-    subject_dropdown.grid(row=1, column=1, pady=(10, 0), padx=7)
+    subject_dropdown.grid(row=1, column=1, padx=(10, 0), pady=5, sticky="nsew")
 
     search_lbl = CTkLabel(show_frame, text='Search Subject:', font=('Helvetica', 15), justify=LEFT)
     search_lbl.grid(row=2, column=0, pady=(10, 0), padx=7, sticky='e')
     search_box = CTkEntry(show_frame, textvariable=search_var, width=250)
-    search_box.grid(row=2, column=1, pady=(10, 0), padx=7)
+    search_box.grid(row=2, column=1, padx=(10, 0), pady=5, sticky="nsew")
 
     # Function to update the subjects dropdown based on selected customer and search term
     def update_subjects_dropdown(selected_customer_name, search_term=''):
@@ -698,12 +894,12 @@ def show():
     date_lbl = CTkLabel(show_frame, text='Date:', font=('Helvetica', 15), justify=LEFT)
     date_lbl.grid(row=3, column=0, pady=(10, 0), padx=7, sticky='e')
     date = CTkEntry(show_frame, width=250)
-    date.grid(row=3, column=1, pady=(10, 0), padx=7)
+    date.grid(row=3, column=1, padx=(10, 0), pady=5, sticky="nsew")
 
     info_lbl = CTkLabel(show_frame, text='Info:', font=('Helvetica', 15))
     info_lbl.grid(row=4, column=0, pady=(10, 0), padx=7, sticky='ne')
     info = CTkTextbox(show_frame, height=450, width=400)
-    info.grid(row=4, column=1, pady=(10, 0), padx=7)
+    info.grid(row=4, column=1, padx=(10, 0), pady=5, sticky="nsew")
 
     # Function to display the selected record's information
     def display_record(record):
@@ -773,7 +969,7 @@ def show():
     # Fetch button to load the record when customer and subject are selected
     fetch_button = CTkButton(show_frame, text="Show Record", command=fetch_record)
     #fetch_button.grid(row=2, column=2, padx=10, pady=10)
-    fetch_button.grid(row=2, column=2, pady=(10, 0), padx=0)
+    fetch_button.grid(row=2, column=2, padx=10, pady=5)
 
 
 '''
