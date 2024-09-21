@@ -637,7 +637,7 @@ def add_new():
 
 
 def hide_all_frame():
-    for frame in [file_add_frame, edit_edit_frame, edit_delete_frame, password_frame, main_frame, show_frame, edit_user_window]:
+    for frame in [file_add_frame, edit_edit_frame, edit_delete_frame, password_frame, main_frame, show_frame, add_user_frame]:
         frame.pack_forget()  # Hide all frames before switching
 
 def show():
@@ -991,18 +991,20 @@ def password():
     clip_button.grid(row=0, column=1, padx=10)
 
 def add_user_window():
+    hide_all_frame()
+    add_user_frame.pack(pady=20, padx=60, fill='both', expand=True)
     """ Function to open a new window for adding users (admin only) """
-    user_window = Toplevel(root)
-    user_window.title("Add New User")
-    user_window.geometry(CenterDisplay(user_window, 400, 300))
+    #user_window = Toplevel(root)
+    #user_window.title("Add New User")
+    #user_window.geometry(CenterDisplay(add_user_frame, 400, 300))
 
     # Labels and Entries for Username and Password
-    Label(user_window, text="New Username:").pack(pady=10)
-    new_username_entry = customtkinter.CTkEntry(user_window, width=250)
+    Label(add_user_frame, text="New Username:").pack(pady=10)
+    new_username_entry = customtkinter.CTkEntry(add_user_frame, width=250)
     new_username_entry.pack(pady=5)
 
-    Label(user_window, text="New Password:").pack(pady=10)
-    new_password_entry = customtkinter.CTkEntry(user_window, width=250, show='*')
+    Label(add_user_frame, text="New Password:").pack(pady=10)
+    new_password_entry = customtkinter.CTkEntry(add_user_frame, width=250, show='*')
     new_password_entry.pack(pady=5)
 
     def add_user():
@@ -1038,17 +1040,17 @@ def add_user_window():
         conn.close()
 
         messagebox.showinfo("Success", f"User '{new_username}' added successfully!")
-        user_window.destroy()
+        add_user_frame.destroy()
 
     # Add Button
-    add_button = Button(user_window, text="Add User", command=add_user)
+    add_button = Button(add_user_frame, text="Add User", command=add_user)
     add_button.pack(pady=20)
 
     #user_menu.add_command(label="Add User", command=add_user_window)
 
 admin_user = "admin"  # Define the admin username
 def delete_user_window():
-
+    hide_all_frame()
     """ Function to open a new window for deleting users (admin only) """
     delete_user_win = Toplevel(root)
     delete_user_win.title("Delete User")
@@ -1104,15 +1106,12 @@ def delete_user_window():
     delete_button.pack(pady=10)
 
 def edit_user_window():
-    hide_all_frame
-    """ Function to open a new window for editing users (admin only) """
-    edit_user_win = Toplevel(root)
-    edit_user_win.title("Edit User")
-    edit_user_win.geometry(CenterDisplay(edit_user_win, 400, 500))
+    hide_all_frame()
+    add_user_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
-    Label(edit_user_win, text="Select a User to Edit:").pack(pady=10)
+    Label(edit_user_frame, text="Select a User to Edit:").pack(pady=10)
 
-    users_listbox = Listbox(edit_user_win, width=40, height=10)
+    users_listbox = Listbox(edit_user_frame, width=40, height=10)
     users_listbox.pack(pady=10)
 
     db_path = load_settings()
@@ -1153,12 +1152,12 @@ def edit_user_window():
             password_entry.delete(0, END)  # Leave password empty for security reasons
 
     # Labels and input fields for editing the user
-    Label(edit_user_win, text="Username:").pack(pady=10)
-    username_entry = customtkinter.CTkEntry(edit_user_win, width=250)
+    Label(edit_user_frame, text="Username:").pack(pady=10)
+    username_entry = customtkinter.CTkEntry(edit_user_frame, width=250)
     username_entry.pack(pady=5)
 
-    Label(edit_user_win, text="New Password (optional):").pack(pady=10)
-    password_entry = customtkinter.CTkEntry(edit_user_win, width=250, show='*')
+    Label(edit_user_frame, text="New Password (optional):").pack(pady=10)
+    password_entry = customtkinter.CTkEntry(edit_user_frame, width=250, show='*')
     password_entry.pack(pady=5)
 
     def save_user_changes():
@@ -1196,11 +1195,11 @@ def edit_user_window():
         messagebox.showinfo("Success", f"User '{selected_user}' has been updated to '{new_username}'")
 
     # Button to load the selected user's data
-    load_button = Button(edit_user_win, text="Load User", command=load_selected_user)
+    load_button = Button(edit_user_frame, text="Load User", command=load_selected_user)
     load_button.pack(pady=10)
 
     # Button to save changes
-    save_button = Button(edit_user_win, text="Save Changes", command=save_user_changes)
+    save_button = Button(edit_user_frame, text="Save Changes", command=save_user_changes)
     save_button.pack(pady=10)
 
 
@@ -1243,6 +1242,9 @@ edit_edit_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_co
 edit_delete_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 password_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 show_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+add_user_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+edit_user_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+delete_user_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 
 
 
