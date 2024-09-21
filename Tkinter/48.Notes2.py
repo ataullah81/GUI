@@ -30,7 +30,16 @@ customtkinter.set_default_color_theme('dark-blue')
 
 # Initialize the main window
 root = customtkinter.CTk()
-root.title('Ticket Info Box')
+#root.title('Ticket Info Box')
+root.geometry(CenterDisplay(root, 900, 950))
+root.title("Ticket Info Box")
+icon_path = os.path.join(os.path.dirname(__file__), 'report.ico')
+root.iconbitmap(icon_path)
+root.geometry("800x900")
+#Label(root, text="Welcome to the main application").pack(pady=20)
+
+my_menu = Menu(root)
+root.config(menu=my_menu)
 
 # Path to settings file
 SETTINGS_FILE = 'db_settings.json'
@@ -180,189 +189,13 @@ def login_window():
 
     Button(login, text="Login", command=authenticate).pack(pady=20)
 
+
+
 root.withdraw()  # Hide the main window
-login_window()   # Show the login window
-root.mainloop()  # Start the main event loop
-
-'''
-# Main application window (after login)
-def main_application():
-    hide_all_frame()
-    root.geometry(CenterDisplay(root, 900, 950))
-
-    # Example of main content - You can add your original content here
-    btn_query = CTkButton(root, text='Show records', command=show)
-    btn_query.pack(pady=20)
-
-    search_btn = CTkButton(root, text="Edit Customer", command=search_window)
-    search_btn.pack(pady=20)
-'''
-def main_application():
-    hide_all_frame()
-    main_frame.pack(pady=20, padx=60, fill='both', expand=True)
-    # Example of main content - Add buttons and functions here
-    btn_query = CTkButton(main_frame, text='Show records', command=show)
-    btn_query.pack(pady=20)
-    search_btn = CTkButton(main_frame, text="Edit Customer", command=search_window)
-    search_btn.pack(pady=20)
-
-
-def CenterDisplay(Screen: CTk, width: int, height: int, scale_factor: float = 1.0):
-    """Centers the window to the main display/monitor"""
-    screen_width = Screen.winfo_screenwidth()
-    screen_height = Screen.winfo_screenheight()
-    x = int(((screen_width / 2) - (width / 2)) * scale_factor)
-    y = int(((screen_height / 2) - (height / 1.9)) * scale_factor)
-    return f"{width}x{height}+{x}+{y}"
-
-customtkinter.set_appearance_mode('dark')
-customtkinter.set_default_color_theme('dark-blue')
-
-root = customtkinter.CTk()
-root.title('Ticket Info Box')
-# Use an absolute path to the icon file
-icon_path = os.path.join(os.path.dirname(__file__), 'report.ico')
-root.iconbitmap(icon_path)
-root.geometry(CenterDisplay(root,900, 950, root._get_window_scaling()))
-
-
-
-my_menu = Menu(root)
-root.config(menu=my_menu)
-
-# Path to settings file
-SETTINGS_FILE = 'db_settings.json'
-
-
-# Function to ask the user for the database directory and name
-def ask_database_info():
-    def select_directory():
-        db_directory = filedialog.askdirectory(title="Select Directory for Database")
-        if db_directory:
-            directory_label.config(text=f"Directory: {db_directory}")
-            return db_directory
-        return None
-
-    def submit():
-        db_name = db_name_entry.get().strip()
-        db_directory = directory_label.cget("text").replace("Directory: ", "").strip()
-
-        if not db_name:
-            messagebox.showerror("Input Error", "Please enter a database name.")
-            return
-        if not db_directory:
-            messagebox.showerror("Input Error", "Please select a directory for the database.")
-            return
-
-        db_name = db_name + ".db" if not db_name.endswith(".db") else db_name
-        db_path = os.path.join(db_directory, db_name)
-
-        # Save database settings
-        save_settings(db_path)
-        messagebox.showinfo("Success", f"Database path set to: {db_path}")
-        db_window.destroy()
-
-        # Now call the function to set up the database after the path is set
-        setup_database()
-
-    # Create the Tkinter window for asking database name and directory
-    db_window = Toplevel()
-    db_window.title("Database Configuration")
-    db_window.wm_attributes("-topmost", 1)
-
-    Label(db_window, text="Enter Database Name:").grid(row=0, column=0, padx=10, pady=10)
-    db_name_entry = Entry(db_window, width=40)
-    db_name_entry.grid(row=0, column=1, padx=10, pady=10)
-
-    select_dir_button = Button(db_window, text="Select Directory", command=select_directory)
-    select_dir_button.grid(row=1, column=0, padx=10, pady=10)
-
-    directory_label = Label(db_window, text="Directory: Not selected")
-    directory_label.grid(row=1, column=1, padx=10, pady=10)
-
-    submit_button = Button(db_window, text="Submit", command=submit)
-    submit_button.grid(row=2, column=0, columnspan=2, pady=10)
-
-
-# Function to save connection string to a settings file
-def save_settings(db_path):
-    settings = {"database_path": db_path}
-    with open(SETTINGS_FILE, 'w') as settings_file:
-        json.dump(settings, settings_file)
-
-
-# Function to load database path from settings file
-def load_settings():
-    if os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, 'r') as settings_file:
-            settings = json.load(settings_file)
-            return settings.get("database_path")
-    return None
-
-
-# Function to check if a table exists
-def table_exists(cursor, table_name):
-    cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';")
-    return cursor.fetchone() is not None
-
-
-# Main function to handle database setup
-def setup_database():
-    # Load existing database path from settings file
-    db_path = load_settings()
-
-    if not db_path:
-        # Ask user for database name and directory if settings file doesn't exist
-        ask_database_info()
-        return  # Exit, database setup will be handled after the user input in `ask_database_info`
-
-    # Check if the database file exists
-    if not os.path.exists(db_path):
-        # Create the database if it doesn't exist
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
-
-        # Create the table
-        c.execute("""CREATE TABLE IF NOT EXISTS customer (
-                    name text,
-                    subject text,
-                    date text,
-                    info text,
-                    modifydate text
-                    )""")
-
-        conn.commit()
-        print("Database and table created.")
-    else:
-        # If the database exists, check for the table
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
-
-        if not table_exists(c, "customer"):
-            # If the table doesn't exist, create it
-            c.execute("""CREATE TABLE customer (
-                        name text,
-                        subject text,
-                        date text,
-                        info text,
-                        modifydate text
-                        )""")
-            conn.commit()
-            print("Table created in existing database.")
-        else:
-            print("Table already exists, skipping creation.")
-
-    # Close the connection
-    conn.close()
-
-
-# Call `setup_database` to ensure the database setup occurs after user input
+# First, setup the database if it's not set
 setup_database()
-
-#root.mainloop()
-
-
-# (Continue with the rest of the functions as in your original script...)
+login_window()   # Show the login window
+#root.mainloop()  # Start the main event loop
 
 
 import tkinter as tk
