@@ -152,6 +152,7 @@ def save_settings(db_path):
 
 # Login window
 def login_window():
+
     login = Toplevel()
     login.title("Login")
     login.geometry(CenterDisplay(login, 400, 250))
@@ -190,10 +191,16 @@ def login_window():
             # Check if the logged-in user is the admin
             if username == admin_user:
                 # Only add the "User Management" menu if the user is admin
+
                 my_menu.add_cascade(label="User Management", menu=user_menu)
+
                 user_menu.add_command(label="Add User", command=add_user_window)
+
                 user_menu.add_command(label="Delete User", command=delete_user_window)  # Add the Delete User option
+
                 user_menu.add_command(label="Edit User", command=edit_user_window)  # Add the Edit User option
+               
+
         else:
             messagebox.showerror("Login Failed", "Invalid username or password.")
 
@@ -636,9 +643,24 @@ def add_new():
     submit_btn.grid(row=5, column=2, pady=(10, 0), padx=7)
 
 
+
+
+'''
 def hide_all_frame():
-    for frame in [file_add_frame, edit_edit_frame, edit_delete_frame, password_frame, main_frame, show_frame, add_user_frame]:
+    for frame in [file_add_frame, edit_edit_frame, edit_delete_frame, password_frame, main_frame, show_frame, add_user_frame, edit_user_frame, delete_user_frame]:
         frame.pack_forget()  # Hide all frames before switching
+'''
+def hide_all_frame():
+    frames = [
+        file_add_frame, edit_edit_frame, edit_delete_frame,
+        password_frame, main_frame, show_frame,
+        add_user_frame, edit_user_frame, delete_user_frame
+    ]
+
+    for frame in frames:
+        # Check if the frame is already packed before calling pack_forget
+        if frame.winfo_ismapped():
+            frame.pack_forget()  # Hide all frames before switching
 
 def show():
     hide_all_frame()
@@ -990,23 +1012,26 @@ def password():
     clip_button = Button(my_frame, text='Copy To Clipboard',bg='green', command=clipping)
     clip_button.grid(row=0, column=1, padx=10)
 
+
+admin_user = "admin"  # Define the admin username
+
+# Function to show the Add User window (admin only)
 def add_user_window():
-    hide_all_frame()
+    hide_all_frame()  # Ensure all frames are hidden first
+    for widget in add_user_frame.winfo_children():
+        widget.destroy()
     add_user_frame.pack(pady=20, padx=60, fill='both', expand=True)
-    """ Function to open a new window for adding users (admin only) """
-    #user_window = Toplevel(root)
-    #user_window.title("Add New User")
-    #user_window.geometry(CenterDisplay(add_user_frame, 400, 300))
 
     # Labels and Entries for Username and Password
-    Label(add_user_frame, text="New Username:").pack(pady=10)
+    CTkLabel(add_user_frame, text="New Username:").pack(pady=10)
     new_username_entry = customtkinter.CTkEntry(add_user_frame, width=250)
     new_username_entry.pack(pady=5)
 
-    Label(add_user_frame, text="New Password:").pack(pady=10)
+    CTkLabel(add_user_frame, text="New Password:").pack(pady=10)
     new_password_entry = customtkinter.CTkEntry(add_user_frame, width=250, show='*')
     new_password_entry.pack(pady=5)
 
+    # Function to add the user
     def add_user():
         new_username = new_username_entry.get().strip()
         new_password = new_password_entry.get().strip()
@@ -1040,26 +1065,24 @@ def add_user_window():
         conn.close()
 
         messagebox.showinfo("Success", f"User '{new_username}' added successfully!")
-        add_user_frame.destroy()
+        new_username_entry.delete(0, END)
+        new_password_entry.delete(0, END)
 
     # Add Button
-    add_button = Button(add_user_frame, text="Add User", command=add_user)
+    add_button = CTkButton(add_user_frame, text="Add User", command=add_user)
     add_button.pack(pady=20)
 
-    #user_menu.add_command(label="Add User", command=add_user_window)
 
-admin_user = "admin"  # Define the admin username
+# Function to show the Delete User window (admin only)
 def delete_user_window():
-    hide_all_frame()
-    """ Function to open a new window for deleting users (admin only) """
-    delete_user_win = Toplevel(root)
-    delete_user_win.title("Delete User")
-    delete_user_win.geometry(CenterDisplay(delete_user_win, 400, 300))
+    hide_all_frame()  # Hide other frames
+    for widget in delete_user_frame.winfo_children():
+        widget.destroy()
+    delete_user_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
-    # Labels and Listbox to show all users
-    Label(delete_user_win, text="Select a User to Delete:").pack(pady=10)
+    CTkLabel(delete_user_frame, text="Select a User to Delete:").pack(pady=10)
 
-    users_listbox = Listbox(delete_user_win, width=40, height=10)
+    users_listbox = Listbox(delete_user_frame, width=40, height=10)
     users_listbox.pack(pady=10)
 
     db_path = load_settings()
@@ -1082,7 +1105,6 @@ def delete_user_window():
 
     def delete_selected_user():
         selected_user = users_listbox.get(ACTIVE)
-
         if not selected_user:
             messagebox.showerror("Selection Error", "Please select a user to delete.")
             return
@@ -1091,25 +1113,28 @@ def delete_user_window():
         if confirm:
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
-
             # Delete the selected user
             cursor.execute("DELETE FROM users WHERE username = ?", (selected_user,))
             conn.commit()
             conn.close()
-
             # Refresh the listbox after deletion
             users_listbox.delete(ACTIVE)
             messagebox.showinfo("Success", f"User '{selected_user}' has been deleted successfully.")
 
     # Delete Button
-    delete_button = Button(delete_user_win, text="Delete User", command=delete_selected_user)
+    delete_button = CTkButton(delete_user_frame, text="Delete User", command=delete_selected_user)
     delete_button.pack(pady=10)
 
-def edit_user_window():
-    hide_all_frame()
-    add_user_frame.pack(pady=20, padx=60, fill='both', expand=True)
+# Function to show the Edit User window (admin only)
 
-    Label(edit_user_frame, text="Select a User to Edit:").pack(pady=10)
+def edit_user_window():
+    hide_all_frame()  # Hide other frames
+    for widget in edit_user_frame.winfo_children():
+        widget.destroy()
+
+    edit_user_frame.pack(pady=20, padx=60, fill='both', expand=True)
+
+    CTkLabel(edit_user_frame, text="Select a User to Edit:").pack(pady=10)
 
     users_listbox = Listbox(edit_user_frame, width=40, height=10)
     users_listbox.pack(pady=10)
@@ -1152,11 +1177,11 @@ def edit_user_window():
             password_entry.delete(0, END)  # Leave password empty for security reasons
 
     # Labels and input fields for editing the user
-    Label(edit_user_frame, text="Username:").pack(pady=10)
+    CTkLabel(edit_user_frame, text="Username:").pack(pady=10)
     username_entry = customtkinter.CTkEntry(edit_user_frame, width=250)
     username_entry.pack(pady=5)
 
-    Label(edit_user_frame, text="New Password (optional):").pack(pady=10)
+    CTkLabel(edit_user_frame, text="New Password (optional):").pack(pady=10)
     password_entry = customtkinter.CTkEntry(edit_user_frame, width=250, show='*')
     password_entry.pack(pady=5)
 
@@ -1195,12 +1220,13 @@ def edit_user_window():
         messagebox.showinfo("Success", f"User '{selected_user}' has been updated to '{new_username}'")
 
     # Button to load the selected user's data
-    load_button = Button(edit_user_frame, text="Load User", command=load_selected_user)
+    load_button = CTkButton(edit_user_frame, text="Load User", command=load_selected_user)
     load_button.pack(pady=10)
 
     # Button to save changes
-    save_button = Button(edit_user_frame, text="Save Changes", command=save_user_changes)
+    save_button = CTkButton(edit_user_frame, text="Save Changes", command=save_user_changes)
     save_button.pack(pady=10)
+
 
 
 #Create a  menu item
@@ -1245,6 +1271,7 @@ show_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='
 add_user_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 edit_user_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 delete_user_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+
 
 
 
