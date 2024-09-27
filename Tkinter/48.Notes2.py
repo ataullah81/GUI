@@ -1,3 +1,5 @@
+import string
+
 import customtkinter
 from tkinter import *
 
@@ -155,13 +157,16 @@ def login_window():
 
     login = Toplevel()
     login.title("Login")
+    icon_path = os.path.join(os.path.dirname(__file__), 'report.ico')
+    login.iconbitmap(icon_path)
     login.geometry(CenterDisplay(login, 400, 250))
+    login.configure(bg='gray')
 
-    Label(login, text="Username:").pack(pady=10)
+    CTkLabel(login, text="Username:",text_color='black').pack(pady=10)
     username_entry = customtkinter.CTkEntry(login, width=250)
     username_entry.pack(pady=5)
 
-    Label(login, text="Password:").pack(pady=10)
+    CTkLabel(login, text="Password:",text_color='black').pack(pady=10)
     password_entry = customtkinter.CTkEntry(login, width=250, show='*')
     password_entry.pack(pady=5)
 
@@ -199,7 +204,7 @@ def login_window():
                 user_menu.add_command(label="Delete User", command=delete_user_window)  # Add the Delete User option
 
                 user_menu.add_command(label="Edit User", command=edit_user_window)  # Add the Edit User option
-               
+
 
         else:
             messagebox.showerror("Login Failed", "Invalid username or password.")
@@ -228,7 +233,7 @@ def login_window():
         else:
             messagebox.showerror("Login Failed", "Invalid username or password.")
 '''
-    Button(login, text="Login", command=authenticate).pack(pady=20)
+    CTkButton(login, text="Login", command=authenticate).pack(pady=20)
 
 
 
@@ -562,10 +567,12 @@ def add_new():
     customer_name_lbl = Label(file_add_frame, text='Select or Add Customer:', font=('Helvetica', 10), bg='gray')
     customer_name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='e')
 
+
     customer_name_var = StringVar(file_add_frame)
 
     # Combining dropdown and entry for customer name
     if customer_names_list:
+
         customer_name_var.set("Select or Add Customer")
         customer_name_dropdown = customtkinter.CTkOptionMenu(file_add_frame, values=customer_names_list,
                                                              variable=customer_name_var)
@@ -841,17 +848,18 @@ def show():
     #fetch_button.grid(row=2, column=2, padx=10, pady=10)
     fetch_button.grid(row=2, column=2, padx=10, pady=5)
 
-
+z = StringVar()
+y = StringVar()
 
 def fetch():
     hide_all_frame()
 
     edit_delete_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
-    customer_name_lbl = tk.Label(edit_delete_frame, text='Customer name: ', font=('Helvetica', 10), bg='gray')
+    customer_name_lbl = CTkLabel(edit_delete_frame, text='Customer name: ', font=('Helvetica', 15))
     customer_name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
 
-    del_customer_name = tk.Entry(edit_delete_frame, textvariable=y, width=50)
+    del_customer_name = CTkEntry(edit_delete_frame, textvariable=y, width=300)
     del_customer_name.insert(0, 'Enter customer name')
     del_customer_name.configure(state='disabled')
 
@@ -863,7 +871,7 @@ def fetch():
     del_customer_name.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # Create a listbox to show multiple matching records
-    records_listbox = tk.Listbox(edit_delete_frame, height=6, selectmode=tk.SINGLE, width=60)
+    records_listbox = Listbox(edit_delete_frame, height=6, selectmode=tk.SINGLE, width=60)
     records_listbox.grid(row=2, column=2, pady=(10, 0), padx=7)
 
     def search_records():
@@ -900,7 +908,7 @@ def fetch():
 
         conn.close()
 
-    search_button = tk.Button(edit_delete_frame, text='Search',bg='green', command=search_records)
+    search_button = CTkButton(edit_delete_frame, text='Search', command=search_records)
     search_button.grid(row=0, column=3, padx=10)
 
     def delete():
@@ -946,7 +954,7 @@ def fetch():
             conn.close()
 
     # Delete record button
-    delete_btn = tk.Button(edit_delete_frame, text='Delete',bg='green', command=delete)
+    delete_btn = CTkButton(edit_delete_frame, text='Delete', command=delete)
     delete_btn.grid(row=8, column=2, columnspan=2, pady=10, padx=10, ipadx=95)
 
 
@@ -960,28 +968,22 @@ def password():
 
     password_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
-    def random():
 
-        special_chars = "!@#$%^&*()_+"
-        # You can exclude certain characters here if desired
-        allowed_chars = [chr(x) for x in range(33, 127) if chr(x) not in ";:`"]
+    def random():
+        # Define allowed characters: letters and digits only, no special characters
+        allowed_chars = list(string.ascii_letters + string.digits)  # Includes uppercase, lowercase, and digits
+
         # Clear entry box
         pw_entry.delete(0, END)
+
         # Get password length and convert to integer
         pw_length = int(my_entry.get())
-        # create a variable to hold password
-        my_password = ''
-        '''
-        # Loop through password length
-        for x in range(pw_length):
-            my_password += chr(randint(33, 126))
-        '''
+
         # Generate password
         my_password = ''.join([allowed_chars[randint(0, len(allowed_chars) - 1)] for _ in range(pw_length)])
 
         # Output password to the screen
         pw_entry.insert(0, my_password)
-
     # Copy to clipboard
     def clipping():
 
