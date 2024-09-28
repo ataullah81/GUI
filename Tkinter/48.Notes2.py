@@ -198,11 +198,11 @@ def login_window():
                 # Only add the "User Management" menu if the user is admin
 
                 my_menu.add_cascade(label="User Management", menu=user_menu)
-
+                user_menu.add_separator()
                 user_menu.add_command(label="Add User", command=add_user_window)
-
+                user_menu.add_separator()
                 user_menu.add_command(label="Delete User", command=delete_user_window)  # Add the Delete User option
-
+                user_menu.add_separator()
                 user_menu.add_command(label="Edit User", command=edit_user_window)  # Add the Edit User option
 
 
@@ -957,21 +957,26 @@ def fetch():
     delete_btn = CTkButton(edit_delete_frame, text='Delete', command=delete)
     delete_btn.grid(row=8, column=2, columnspan=2, pady=10, padx=10, ipadx=95)
 
+# Function to load database settings
+def load_settings():
+    # Load the database path from settings file
+    if os.path.exists('db_settings.json'):
+        with open('db_settings.json', 'r') as settings_file:
+            settings = json.load(settings_file)
+            return settings.get("database_path")
+    return None
 
 def password():
     hide_all_frame()
-    # create global variables for text boxes
-    #global customer_name
-    # If password_frame already has children, destroy them
+
     for widget in password_frame.winfo_children():
         widget.destroy()
 
     password_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
-
     def random():
         # Define allowed characters: letters and digits only, no special characters
-        allowed_chars = list(string.ascii_letters + string.digits)  # Includes uppercase, lowercase, and digits
+        allowed_chars = list(string.ascii_letters + string.digits)
 
         # Clear entry box
         pw_entry.delete(0, END)
@@ -984,35 +989,104 @@ def password():
 
         # Output password to the screen
         pw_entry.insert(0, my_password)
-    # Copy to clipboard
+
+    # Copy to clipboard function
     def clipping():
-
-        # Clear the clipborad
         password_frame.clipboard_clear()
-        # Copy to clipborad
         password_frame.clipboard_append(pw_entry.get())
-        tkinter.messagebox.showinfo('', 'Password copied')
+        messagebox.showinfo('', 'Password copied')
 
-    lf = LabelFrame(password_frame, text='Choose Length of Password',bg='gray')
+    # Save password to the database
+    def save_password():
+        db_path = load_settings()
+        if not db_path:
+            messagebox.showerror("Error", "Database path not set.")
+            return
+
+        # Get the name, username, and password from the input fields
+        name = name_entry.get().strip()
+        username = username_entry.get().strip()
+        password = pw_entry.get().strip()
+
+        # Validate input
+        if not name or not username or not password:
+            messagebox.showerror("Input Error", "Please enter name, username, and password.")
+            return
+
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+
+        # Create the table if it doesn't exist
+        c.execute('''CREATE TABLE IF NOT EXISTS credentials (
+                        name TEXT,
+                        username TEXT UNIQUE,
+                        password TEXT
+                    )''')
+
+        # Check if the username already exists
+        c.execute("SELECT * FROM credentials WHERE username = ?", (username,))
+        existing_user = c.fetchone()
+
+        if existing_user:
+            messagebox.showerror("Error", "Username already exists. Please choose a different username.")
+            conn.close()
+            return
+
+        # Insert the name, username, and password into the database
+        c.execute("INSERT INTO credentials (name, username, password) VALUES (?, ?, ?)", (name, username, password))
+        conn.commit()
+        conn.close()
+
+        messagebox.showinfo("Success", "Password saved to the database!")
+
+        # Clear the fields after saving
+        name_entry.delete(0, END)
+        username_entry.delete(0, END)
+        pw_entry.delete(0, END)
+
+    # UI for Password Length
+    lf = LabelFrame(password_frame, text='Choose Length of Password', font=('Helvetica', 12), bd=2, bg='gray')
     lf.pack(pady=20)
-    #password_frame.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
-    my_entry = Spinbox(lf, from_=5, to=25, font=('Helvetica', 24),bg='gray')
+
+    my_entry = Spinbox(lf, from_=5, to=25, font=('Helvetica', 24), bg='gray')
     my_entry.pack(pady=20, padx=20)
-    lf2 = LabelFrame(password_frame, text='Generated Password', bd=5,bg='gray')
+
+
+
+    # UI for Name Entry
+    lf2 = LabelFrame(password_frame, text='Enter a Name for the Password', font=('Helvetica', 12), bd=2, bg='gray')
     lf2.pack()
-    # pw_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='systembuttonface')
-    pw_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='gray')
+
+    name_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='gray')
+    name_entry.pack(pady=(0, 20))
+
+    # UI for Username Entry
+    lf3 = LabelFrame(password_frame, text='Enter the username', font=('Helvetica', 12), bd=2, bg='gray')
+    lf3.pack()
+
+    username_entry = Entry(lf3, text='', font=('Helvetica', 24), bd=0, bg='gray')
+    username_entry.pack(pady=(0, 20))
+
+    # UI for Generated Password
+    lf4 = LabelFrame(password_frame, text='Generated Password', font=('Helvetica', 12), bd=2, bg='gray')
+    lf4.pack()
+
+    pw_entry = Entry(lf4, text='', font=('Helvetica', 24), bd=0, bg='gray')
     pw_entry.pack(pady=(0, 20))
-    # Label Frame
-    # Create our buttons
-# Create frame for our buttons
-    my_frame = Frame(password_frame,bg='gray')
+
+    # Frame for Buttons
+    my_frame = Frame(password_frame, bg='gray')
     my_frame.pack(pady=20)
-    my_button = Button(my_frame, text='Generate Strong Password',bg='green', command=random)
+
+    # Buttons
+    my_button = Button(my_frame, text='Generate Strong Password', bg='green', command=random)
     my_button.grid(row=0, column=0, padx=10)
 
-    clip_button = Button(my_frame, text='Copy To Clipboard',bg='green', command=clipping)
+    clip_button = Button(my_frame, text='Copy To Clipboard', bg='green', command=clipping)
     clip_button.grid(row=0, column=1, padx=10)
+
+    save_button = Button(my_frame, text='Save Password', bg='green', command=save_password)
+    save_button.grid(row=0, column=2, padx=10)
 
 
 admin_user = "admin"  # Define the admin username
@@ -1232,7 +1306,7 @@ def edit_user_window():
 
 
 #Create a  menu item
-file_menu = Menu(my_menu)
+file_menu = Menu(my_menu,tearoff=0)
 my_menu.add_cascade(label="File", menu=file_menu)
 #file_menu.add_command(label="Main Window",command=find_customer)
 file_menu.add_separator()
@@ -1241,23 +1315,28 @@ file_menu.add_separator()
 file_menu.add_command(label="Exit",command=root.quit)
 
 # Create a menu item
-edit_menu = Menu(my_menu)
+edit_menu = Menu(my_menu,tearoff=0)
 my_menu.add_cascade(label="Edit",menu=edit_menu)
+edit_menu.add_separator()
 edit_menu.add_command(label="Edit Record",command=search_window)
+edit_menu.add_separator()
 edit_menu.add_command(label="Delete Record",command=fetch)
 
 # Create a password item
-password_menu = Menu(my_menu)
+password_menu = Menu(my_menu,tearoff=0)
 my_menu.add_cascade(label="Password",menu=password_menu)
+password_menu.add_separator()
 password_menu.add_command(label="Generate Password",command=password)
 
 
 # Menu for user management (only accessible by admin)
-user_menu = Menu(my_menu)
+user_menu = Menu(my_menu,tearoff=0)
+
 
 # Create a Options item
-option_menu = Menu(my_menu)
+option_menu = Menu(my_menu,tearoff=0)
 my_menu.add_cascade(label="Options",menu=option_menu)
+option_menu.add_separator()
 #option_menu.add_command(label="Find",command=find)
 #option_menu.add_command(label="Find Next",command=our_command)
 option_menu.add_command(label="About",command=about)
