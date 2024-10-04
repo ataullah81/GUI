@@ -37,7 +37,7 @@ root.geometry(CenterDisplay(root, 900, 950))
 root.title("Ticket Info Box")
 icon_path = os.path.join(os.path.dirname(__file__), 'report.ico')
 root.iconbitmap(icon_path)
-root.geometry("800x900")
+root.geometry("800x950")
 #Label(root, text="Welcome to the main application").pack(pady=20)
 
 my_menu = Menu(root)
@@ -412,7 +412,7 @@ def search_window():
         nonlocal auto_save_timer
         if auto_save_timer:
             edit_edit_frame.after_cancel(auto_save_timer)  # Cancel the existing timer if present
-        auto_save_timer = edit_edit_frame.after(10000, auto_save_changes)  # Set the timer to 10 seconds
+        auto_save_timer = edit_edit_frame.after(2000, auto_save_changes)  # Set the timer to 10 seconds
 
     # Perform search function
     def perform_search(customer_name, subject):
@@ -447,8 +447,9 @@ def search_window():
             notes_entry.delete('1.0', tk.END)
             notes_entry.insert(tk.END, record[3])
 
+            '''
             status_label.configure(text=f"Record {index + 1} of {total_records}")
-
+        
         def next_record():
             global current_record_index
             if current_record_index < total_records - 1:
@@ -460,11 +461,11 @@ def search_window():
             if current_record_index > 0:
                 current_record_index -= 1
                 display_record(current_record_index)
-
+        
 
         status_label = Label(edit_edit_frame, text=f"Record 1 of {total_records}", font=('Helvetica', 10), bg='gray')
         status_label.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
-
+        '''
         display_record(current_record_index)
         conn.close()
 
@@ -1051,8 +1052,6 @@ def password():
     my_entry = Spinbox(lf, from_=5, to=25, font=('Helvetica', 24), bg='gray')
     my_entry.pack(pady=20, padx=20)
 
-
-
     # UI for Name Entry
     lf2 = LabelFrame(password_frame, text='Enter a Name for the Password', font=('Helvetica', 12), bd=2, bg='gray')
     lf2.pack()
@@ -1302,7 +1301,6 @@ def edit_user_window():
     # Button to save changes
     save_button = CTkButton(edit_user_frame, text="Save Changes", command=save_user_changes)
     save_button.pack(pady=10)
-
 
 
 #Create a  menu item
