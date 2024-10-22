@@ -47,12 +47,22 @@ def query():
     records = c.fetchall()
     #print(records)
     #Query through results
-    print_records = ''
-    for i in records:
-        print_records += str(i[0]) + '\n'
+    print_username = ''
 
-    query_label= Label(root,text=print_records)
-    query_label.grid(row=5, column=0, columnspan=2)
+    for i in records:
+        #print_username += str(i[0]) + " " + str(i[1]) + '\n'
+        print_username += str(i[0]) + " " +str(i[1]) +  " " + "\t"  +str(i[3]) + '\n'
+
+
+
+    #query_label= Label(root,text=print_records)
+    #query_label.grid(row=5, column=0, columnspan=2)
+
+    query_text = Text(root, width=20, height=10)
+    query_text.grid(row=5, column=0, columnspan=2)
+    query_text.insert(1.0,print_username)
+
+
     # Commit
     conn.commit()
 
