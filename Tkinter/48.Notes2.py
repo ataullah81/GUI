@@ -2,7 +2,7 @@ import string
 
 import customtkinter
 from tkinter import *
-
+from tkinter import font
 from customtkinter import *
 from tkcalendar import *
 from datetime import datetime
@@ -13,9 +13,11 @@ import json
 from random import randint
 import tkinter.messagebox
 import bcrypt  # Library for password hashing
+
 import tkinter as tk
 from tkinter import Toplevel, StringVar, Entry, Button, Label, messagebox
 import babel.numbers
+from pathlib import Path
 
 
 def CenterDisplay(Screen: CTk, width: int, height: int, scale_factor: float = 1.0):
@@ -33,11 +35,11 @@ customtkinter.set_default_color_theme('dark-blue')
 # Initialize the main window
 root = customtkinter.CTk()
 #root.title('Ticket Info Box')
-root.geometry(CenterDisplay(root, 900, 950))
+root.geometry(CenterDisplay(root, 1500, 950))
 root.title("Ticket Info Box")
 icon_path = os.path.join(os.path.dirname(__file__), 'report.ico')
 root.iconbitmap(icon_path)
-root.geometry("800x950")
+root.geometry("1500x950")
 #Label(root, text="Welcome to the main application").pack(pady=20)
 
 my_menu = Menu(root)
@@ -276,7 +278,7 @@ def search_window():
     def load_customer_names():
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
-        cur_sor.execute("SELECT DISTINCT name FROM customer")
+        cur_sor.execute("SELECT DISTINCT name FROM customer ORDER BY name COLLATE NOCASE")
         customer_names = cur_sor.fetchall()
         conn.close()
         return [name[0] for name in customer_names]
@@ -285,7 +287,7 @@ def search_window():
     def load_subjects(customer_name):
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
-        cur_sor.execute("SELECT DISTINCT subject FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + customer_name + '%',))
+        cur_sor.execute("SELECT DISTINCT subject FROM customer WHERE name LIKE ? COLLATE NOCASE ORDER BY subject COLLATE NOCASE", ('%' + customer_name + '%',))
         subjects = cur_sor.fetchall()
         conn.close()
         return [subject[0] for subject in subjects]
@@ -295,7 +297,7 @@ def search_window():
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
         cur_sor.execute(
-            "SELECT DISTINCT subject FROM customer WHERE name = ? AND subject LIKE ? COLLATE NOCASE",
+            "SELECT DISTINCT subject FROM customer WHERE name = ? AND subject LIKE ? COLLATE NOCASE ORDER BY subject COLLATE NOCASE",
             (customer_name, '%' + search_term + '%')
         )
         filtered_subjects = cur_sor.fetchall()
@@ -369,12 +371,49 @@ def search_window():
     update_subjects_dropdown(customer_name_var.get())
 
     # Search button to perform search based on selected customer and subject
-    search_button = CTkButton(edit_edit_frame, text="Search",
-                           command=lambda: perform_search(customer_name_var.get(), subject_var.get()))
+    search_button = CTkButton(edit_edit_frame, text="Search",command=lambda: perform_search(customer_name_var.get(), subject_var.get()))
     search_button.grid(row=2, column=2, padx=10, pady=10)
+    '''
+    # Bold text function
 
+    def bold_text():
+        global text_is_bold
+        if text_is_bold:
+            notes_entry.configure(font=("Helvetica", 15, "normal"))  # Set normal font
+            text_is_bold = False
+        else:
+            notes_entry.configure(font=("Helvetica", 15, "bold"))  # Set bold font
+            text_is_bold = True
+    # Italics Test
+    def italics_text():
+        global text_is_italic
+        if text_is_italic:
+            notes_entry.configure(font=("Helvetica", 15, "normal"))  # Set normal font
+            text_is_italic = False
+        else:
+            notes_entry.configure(font=("Helvetica", 15, "italic"))  # Set italic font
+            text_is_italic = True
+
+    #Buttons for text editing
+
+    edit_button_frame = customtkinter.CTkFrame(master=edit_edit_frame, width=80, height=60, fg_color='gray')
+    edit_button_frame.grid(row=6, column=2, padx=10, pady=10)
+
+    bold_button = CTkButton(edit_button_frame, text= "Bold", command=bold_text)
+    bold_button.grid(row=5, column=2, padx=10, pady=10)
+
+    bold_button = CTkButton(edit_button_frame, text="Italics",command=italics_text)
+    bold_button.grid(row=5, column=3, padx=10, pady=10)
+
+    bold_button = CTkButton(edit_button_frame, text="Undo")
+    bold_button.grid(row=6, column=2, padx=10, pady=10)
+
+    bold_button = CTkButton(edit_button_frame, text="Redo")
+    bold_button.grid(row=6, column=3, padx=10, pady=10)
+    '''
     # Define global entry fields here so they can be accessed throughout
     global name_entry, subject_entry, date_entry, notes_entry
+
 
     # Entry fields for editing (defined outside perform_search so accessible globally)
     CTkLabel(edit_edit_frame, text="Customer Name:", font=('Helvetica', 15)).grid(row=3, column=0, padx=10, pady=5, sticky='e')
@@ -390,7 +429,9 @@ def search_window():
     date_entry.grid(row=5, column=1, padx=(10,0), pady=5, sticky="nsew")
 
     CTkLabel(edit_edit_frame, text="Notes:", font=('Helvetica', 15)).grid(row=6, column=0, padx=10, pady=5, sticky='e')
-    notes_entry = CTkTextbox(edit_edit_frame, width=350, height=400, font=('Helvetica', 15))
+    notes_font = CTkFont(family="Helvetica", size=15, weight="normal", slant="roman")
+    notes_entry = CTkTextbox(edit_edit_frame, width=600, height=400, font=("Helvetica", 15))
+    # notes_entry = CTkTextbox(edit_edit_frame, width=350, height=400, font=notes_font)
     notes_entry.grid(row=6, column=1, padx=(10,0), pady=5, sticky="nsew")
 
     # Success message label (initially empty)
@@ -447,25 +488,7 @@ def search_window():
             notes_entry.delete('1.0', tk.END)
             notes_entry.insert(tk.END, record[3])
 
-            '''
-            status_label.configure(text=f"Record {index + 1} of {total_records}")
-        
-        def next_record():
-            global current_record_index
-            if current_record_index < total_records - 1:
-                current_record_index += 1
-                display_record(current_record_index)
 
-        def prev_record():
-            global current_record_index
-            if current_record_index > 0:
-                current_record_index -= 1
-                display_record(current_record_index)
-        
-
-        status_label = Label(edit_edit_frame, text=f"Record 1 of {total_records}", font=('Helvetica', 10), bg='gray')
-        status_label.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
-        '''
         display_record(current_record_index)
         conn.close()
 
@@ -532,7 +555,7 @@ def about():
     lbl = Label(about_window, text='Copyright ©arbrtech. All Rights Reserved', fg='white', bg='#36454F')
     #lbl.pack(pady=90, anchor='s')
     lbl.grid(row=0, column=1, pady=(10, 0), padx=20)
-    lbl2 = Label(about_window, text='Version 1.1.3',fg='white', bg='#36454F')
+    lbl2 = Label(about_window, text='Version 1.1.9',fg='white', bg='#36454F')
     lbl2.grid(row=1, column=1, pady=(10, 0), padx=20)
     #lbl2.pack(pady=90, anchor='w')
 
@@ -555,7 +578,7 @@ def add_new():
 
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT name FROM customer")
+        cursor.execute("SELECT DISTINCT name FROM customer ORDER BY name COLLATE NOCASE")
         customer_names = cursor.fetchall()
         conn.close()
 
@@ -565,7 +588,7 @@ def add_new():
     # Load the customer names into the dropdown menu
     customer_names_list = load_customer_names()
 
-    customer_name_lbl = Label(file_add_frame, text='Select or Add Customer:', font=('Helvetica', 10), bg='gray')
+    customer_name_lbl = CTkLabel(file_add_frame, text='Select or Add Customer:', font=('Helvetica', 15))
     customer_name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='e')
 
 
@@ -575,32 +598,32 @@ def add_new():
     if customer_names_list:
 
         customer_name_var.set("Select or Add Customer")
-        customer_name_dropdown = customtkinter.CTkOptionMenu(file_add_frame, values=customer_names_list,
+        customer_name_dropdown = customtkinter.CTkOptionMenu(file_add_frame, width=250, values=customer_names_list,
                                                              variable=customer_name_var)
         customer_name_dropdown.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
     else:
         customer_name_var.set("Add New Customer")
 
     # Entry field to allow adding a new customer even when customers are available
-    customer_name_entry = Entry(file_add_frame, textvariable=customer_name_var, width=50)
+    customer_name_entry = CTkEntry(file_add_frame, textvariable=customer_name_var, width=250)
     customer_name_entry.grid(row=1, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # New subject input
-    customer_subject_lbl = Label(file_add_frame, text='New Subject:', font=('Helvetica', 10), bg='gray')
+    customer_subject_lbl = CTkLabel(file_add_frame, text='New Subject:', font=('Helvetica', 15))
     customer_subject_lbl.grid(row=2, column=1, pady=(10, 0), padx=7, sticky='e')
-    customer_subject = Entry(file_add_frame, width=50)
+    customer_subject = CTkEntry(file_add_frame, width=250)
     customer_subject.grid(row=2, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # Date input
-    customer_date_lbl = Label(file_add_frame, text='Date: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
+    customer_date_lbl = CTkLabel(file_add_frame, text='Date: ', font=('Helvetica', 15), justify=LEFT)
     customer_date_lbl.grid(row=3, column=1, pady=(10, 0), padx=7, sticky='e')
     customer_date = DateEntry(file_add_frame, date_pattern='dd-mm-yyyy')
     customer_date.grid(row=3, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # Notes input
-    customer_info_lbl = Label(file_add_frame, text='Notes: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
+    customer_info_lbl = CTkLabel(file_add_frame, text='Notes: ', font=('Helvetica', 15), justify=LEFT)
     customer_info_lbl.grid(row=4, column=1, pady=(10, 0), padx=7, sticky='e')
-    customer_info = Text(file_add_frame, height=25, width=52)
+    customer_info = CTkTextbox(file_add_frame, height=500, width=1050)
     customer_info.grid(row=4, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # Submit new subject for the selected or new customer
@@ -647,7 +670,7 @@ def add_new():
         finally:
             conn.close()
 
-    submit_btn = Button(file_add_frame, text='Save', bg='green', font=('Helvetica', 10), command=submit)
+    submit_btn = CTkButton(file_add_frame, text='Save', font=('Helvetica', 15), command=submit)
     submit_btn.grid(row=5, column=2, pady=(10, 0), padx=7)
 
 
@@ -684,7 +707,7 @@ def show():
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
 
-        cur_sor.execute("SELECT DISTINCT name FROM customer")
+        cur_sor.execute("SELECT DISTINCT name FROM customer ORDER BY name COLLATE NOCASE")
         customer_names = cur_sor.fetchall()
         conn.close()
 
@@ -697,10 +720,10 @@ def show():
         cur_sor = conn.cursor()
 
         if search_term:
-            query = "SELECT DISTINCT subject FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE"
+            query = "SELECT DISTINCT subject FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE ORDER BY subject COLLATE NOCASE"
             cur_sor.execute(query, ('%' + customer_name + '%', '%' + search_term + '%'))
         else:
-            query = "SELECT DISTINCT subject FROM customer WHERE name LIKE ? COLLATE NOCASE"
+            query = "SELECT DISTINCT subject FROM customer WHERE name LIKE ? COLLATE NOCASE ORDER BY subject COLLATE NOCASE"
             cur_sor.execute(query, ('%' + customer_name + '%',))
 
         subjects = cur_sor.fetchall()
@@ -799,7 +822,7 @@ def show():
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
 
-        cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE",
+        cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE ORDER BY subject COLLATE NOCASE",
                         ('%' + customer_name + '%', '%' + subject + '%'))
         records = cur_sor.fetchall()
 
@@ -811,7 +834,7 @@ def show():
         global current_record_index
         current_record_index = 0
         total_records = len(records)
-
+        '''
         def next_record():
             """ Show the next record """
             global current_record_index
@@ -825,23 +848,23 @@ def show():
             if current_record_index > 0:
                 current_record_index -= 1
                 display_record(records[current_record_index])
-
+'''
         # Display the first record
         display_record(records[current_record_index])
 
         # Create navigation buttons for the records
         button_frame = Frame(show_frame, bg='gray')
         button_frame.grid(row=5, column=0, columnspan=2, pady=(20, 0))
-
+        '''
         prev_btn = CTkButton(button_frame, text='Previous', command=prev_record)
         next_btn = CTkButton(button_frame, text='Next', command=next_record)
 
         prev_btn.pack(side=LEFT, padx=20)
         next_btn.pack(side=RIGHT, padx=20)
-
+        
         status_label = CTkLabel(show_frame, text=f"Record {current_record_index + 1} of {total_records}")
         status_label.grid(row=6, column=0, columnspan=2, pady=(20, 10))
-
+        '''
         conn.close()
 
     # Fetch button to load the record when customer and subject are selected
@@ -892,7 +915,7 @@ def fetch():
         cur_sor = conn.cursor()
 
         # Find matching records with a partial search
-        cur_sor.execute("SELECT rowid, name, date FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + customer_name + '%',))
+        cur_sor.execute("SELECT rowid, name, date FROM customer WHERE name LIKE ? COLLATE NOCASE ORDER BY name COLLATE NOCASE", ('%' + customer_name + '%',))
         records = cur_sor.fetchall()
 
         # Clear previous listbox entries
