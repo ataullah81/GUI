@@ -1,6 +1,8 @@
+import string
+
 import customtkinter
 from tkinter import *
-
+from tkinter import font
 from customtkinter import *
 from tkcalendar import *
 from datetime import datetime
@@ -10,10 +12,13 @@ import os
 import json
 from random import randint
 import tkinter.messagebox
+import bcrypt  # Library for password hashing
 
 import tkinter as tk
 from tkinter import Toplevel, StringVar, Entry, Button, Label, messagebox
 import babel.numbers
+from pathlib import Path
+
 
 def CenterDisplay(Screen: CTk, width: int, height: int, scale_factor: float = 1.0):
     """Centers the window to the main display/monitor"""
@@ -23,17 +28,19 @@ def CenterDisplay(Screen: CTk, width: int, height: int, scale_factor: float = 1.
     y = int(((screen_height / 2) - (height / 1.9)) * scale_factor)
     return f"{width}x{height}+{x}+{y}"
 
+
 customtkinter.set_appearance_mode('dark')
 customtkinter.set_default_color_theme('dark-blue')
 
+# Initialize the main window
 root = customtkinter.CTk()
-root.title('Ticket Info Box')
-# Use an absolute path to the icon file
+#root.title('Ticket Info Box')
+root.geometry(CenterDisplay(root, 1500, 950))
+root.title("Ticket Info Box")
 icon_path = os.path.join(os.path.dirname(__file__), 'report.ico')
 root.iconbitmap(icon_path)
-root.geometry(CenterDisplay(root,900, 950, root._get_window_scaling()))
-
-
+root.geometry("1500x950")
+#Label(root, text="Welcome to the main application").pack(pady=20)
 
 my_menu = Menu(root)
 root.config(menu=my_menu)
@@ -42,7 +49,55 @@ root.config(menu=my_menu)
 SETTINGS_FILE = 'db_settings.json'
 
 
-# Function to ask the user for the database directory and name
+# Database setup function to create users and customer tables
+def setup_database():
+    # Load existing database path from settings file
+    db_path = load_settings()
+
+    if not db_path:
+        # Ask user for database name and directory if settings file doesn't exist
+        ask_database_info()
+        return  # Exit, database setup will be handled after the user input in `ask_database_info`
+
+    # Check if the database file exists
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+
+    # Create the users table (for login)
+    c.execute("""CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                password TEXT
+                )""")
+
+    # Create the customer table (your original program)
+    c.execute("""CREATE TABLE IF NOT EXISTS customer (
+                name TEXT,
+                subject TEXT,
+                date TEXT,
+                info TEXT,
+                modifydate TEXT
+                )""")
+
+    # Add a default admin user if no users exist
+    c.execute("SELECT COUNT(*) FROM users")
+    if c.fetchone()[0] == 0:
+        hashed_password = bcrypt.hashpw("admin123".encode(), bcrypt.gensalt())
+        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", ("admin", hashed_password))
+        conn.commit()
+
+    conn.close()
+
+
+# Function to load database path from settings file
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        with open(SETTINGS_FILE, 'r') as settings_file:
+            settings = json.load(settings_file)
+            return settings.get("database_path")
+    return None
+
+
+# Function to ask for the database info
 def ask_database_info():
     def select_directory():
         db_directory = filedialog.askdirectory(title="Select Directory for Database")
@@ -99,78 +154,96 @@ def save_settings(db_path):
         json.dump(settings, settings_file)
 
 
-# Function to load database path from settings file
-def load_settings():
-    if os.path.exists(SETTINGS_FILE):
-        with open(SETTINGS_FILE, 'r') as settings_file:
-            settings = json.load(settings_file)
-            return settings.get("database_path")
-    return None
+# Login window
+def login_window():
 
+    login = Toplevel()
+    login.title("Login")
+    icon_path = os.path.join(os.path.dirname(__file__), 'report.ico')
+    login.iconbitmap(icon_path)
+    login.geometry(CenterDisplay(login, 400, 250))
+    login.configure(bg='gray')
 
-# Function to check if a table exists
-def table_exists(cursor, table_name):
-    cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';")
-    return cursor.fetchone() is not None
+    CTkLabel(login, text="Username:",text_color='black').pack(pady=10)
+    username_entry = customtkinter.CTkEntry(login, width=250)
+    username_entry.pack(pady=5)
 
+    CTkLabel(login, text="Password:",text_color='black').pack(pady=10)
+    password_entry = customtkinter.CTkEntry(login, width=250, show='*')
+    password_entry.pack(pady=5)
 
-# Main function to handle database setup
-def setup_database():
-    # Load existing database path from settings file
-    db_path = load_settings()
+    admin_user = "admin"  # Define the admin username
 
-    if not db_path:
-        # Ask user for database name and directory if settings file doesn't exist
-        ask_database_info()
-        return  # Exit, database setup will be handled after the user input in `ask_database_info`
+    def authenticate():
+        username = username_entry.get().strip()
+        password = password_entry.get().strip()
 
-    # Check if the database file exists
-    if not os.path.exists(db_path):
-        # Create the database if it doesn't exist
+        db_path = load_settings()
+        if not db_path:
+            messagebox.showerror("Error", "Database path not set. Please configure the database.")
+            return
+
         conn = sqlite3.connect(db_path)
-        c = conn.cursor()
+        cursor = conn.cursor()
 
-        # Create the table
-        c.execute("""CREATE TABLE IF NOT EXISTS customer (
-                    name text,
-                    subject text,
-                    date text,
-                    info text,
-                    modifydate text
-                    )""")
+        cursor.execute("SELECT password FROM users WHERE username = ?", (username,))
+        result = cursor.fetchone()
+        conn.close()
 
-        conn.commit()
-        print("Database and table created.")
-    else:
-        # If the database exists, check for the table
-        conn = sqlite3.connect(db_path)
-        c = conn.cursor()
+        if result and bcrypt.checkpw(password.encode(), result[0]):
+            messagebox.showinfo("Login Success", "You have logged in successfully.")
+            login.destroy()  # Close the login window
+            root.deiconify()  # Show the main window
 
-        if not table_exists(c, "customer"):
-            # If the table doesn't exist, create it
-            c.execute("""CREATE TABLE customer (
-                        name text,
-                        subject text,
-                        date text,
-                        info text,
-                        modifydate text
-                        )""")
-            conn.commit()
-            print("Table created in existing database.")
+            # Check if the logged-in user is the admin
+            if username == admin_user:
+                # Only add the "User Management" menu if the user is admin
+
+                my_menu.add_cascade(label="User Management", menu=user_menu)
+                user_menu.add_separator()
+                user_menu.add_command(label="Add User", command=add_user_window)
+                user_menu.add_separator()
+                user_menu.add_command(label="Delete User", command=delete_user_window)  # Add the Delete User option
+                user_menu.add_separator()
+                user_menu.add_command(label="Edit User", command=edit_user_window)  # Add the Edit User option
+
+
         else:
-            print("Table already exists, skipping creation.")
+            messagebox.showerror("Login Failed", "Invalid username or password.")
 
-    # Close the connection
-    conn.close()
+    '''
+    def authenticate():
+        username = username_entry.get().strip()
+        password = password_entry.get().strip()
+
+        db_path = load_settings()
+        if not db_path:
+            messagebox.showerror("Error", "Database path not set. Please configure the database.")
+            return
+
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT password FROM users WHERE username = ?", (username,))
+        result = cursor.fetchone()
+        conn.close()
+
+        if result and bcrypt.checkpw(password.encode(), result[0]):
+            messagebox.showinfo("Login Success", "You have logged in successfully.")
+            login.destroy()  # Close the login window
+            root.deiconify()  # Show the main window
+        else:
+            messagebox.showerror("Login Failed", "Invalid username or password.")
+'''
+    CTkButton(login, text="Login", command=authenticate).pack(pady=20)
 
 
-# Call `setup_database` to ensure the database setup occurs after user input
+
+root.withdraw()  # Hide the main window
+# First, setup the database if it's not set
 setup_database()
-
-#root.mainloop()
-
-
-# (Continue with the rest of the functions as in your original script...)
+login_window()   # Show the login window
+#root.mainloop()  # Start the main event loop
 
 
 import tkinter as tk
@@ -205,7 +278,7 @@ def search_window():
     def load_customer_names():
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
-        cur_sor.execute("SELECT DISTINCT name FROM customer")
+        cur_sor.execute("SELECT DISTINCT name FROM customer ORDER BY name COLLATE NOCASE")
         customer_names = cur_sor.fetchall()
         conn.close()
         return [name[0] for name in customer_names]
@@ -214,7 +287,7 @@ def search_window():
     def load_subjects(customer_name):
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
-        cur_sor.execute("SELECT DISTINCT subject FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + customer_name + '%',))
+        cur_sor.execute("SELECT DISTINCT subject FROM customer WHERE name LIKE ? COLLATE NOCASE ORDER BY subject COLLATE NOCASE", ('%' + customer_name + '%',))
         subjects = cur_sor.fetchall()
         conn.close()
         return [subject[0] for subject in subjects]
@@ -224,7 +297,7 @@ def search_window():
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
         cur_sor.execute(
-            "SELECT DISTINCT subject FROM customer WHERE name = ? AND subject LIKE ? COLLATE NOCASE",
+            "SELECT DISTINCT subject FROM customer WHERE name = ? AND subject LIKE ? COLLATE NOCASE ORDER BY subject COLLATE NOCASE",
             (customer_name, '%' + search_term + '%')
         )
         filtered_subjects = cur_sor.fetchall()
@@ -298,12 +371,49 @@ def search_window():
     update_subjects_dropdown(customer_name_var.get())
 
     # Search button to perform search based on selected customer and subject
-    search_button = CTkButton(edit_edit_frame, text="Search",
-                           command=lambda: perform_search(customer_name_var.get(), subject_var.get()))
+    search_button = CTkButton(edit_edit_frame, text="Search",command=lambda: perform_search(customer_name_var.get(), subject_var.get()))
     search_button.grid(row=2, column=2, padx=10, pady=10)
+    '''
+    # Bold text function
 
+    def bold_text():
+        global text_is_bold
+        if text_is_bold:
+            notes_entry.configure(font=("Helvetica", 15, "normal"))  # Set normal font
+            text_is_bold = False
+        else:
+            notes_entry.configure(font=("Helvetica", 15, "bold"))  # Set bold font
+            text_is_bold = True
+    # Italics Test
+    def italics_text():
+        global text_is_italic
+        if text_is_italic:
+            notes_entry.configure(font=("Helvetica", 15, "normal"))  # Set normal font
+            text_is_italic = False
+        else:
+            notes_entry.configure(font=("Helvetica", 15, "italic"))  # Set italic font
+            text_is_italic = True
+
+    #Buttons for text editing
+
+    edit_button_frame = customtkinter.CTkFrame(master=edit_edit_frame, width=80, height=60, fg_color='gray')
+    edit_button_frame.grid(row=6, column=2, padx=10, pady=10)
+
+    bold_button = CTkButton(edit_button_frame, text= "Bold", command=bold_text)
+    bold_button.grid(row=5, column=2, padx=10, pady=10)
+
+    bold_button = CTkButton(edit_button_frame, text="Italics",command=italics_text)
+    bold_button.grid(row=5, column=3, padx=10, pady=10)
+
+    bold_button = CTkButton(edit_button_frame, text="Undo")
+    bold_button.grid(row=6, column=2, padx=10, pady=10)
+
+    bold_button = CTkButton(edit_button_frame, text="Redo")
+    bold_button.grid(row=6, column=3, padx=10, pady=10)
+    '''
     # Define global entry fields here so they can be accessed throughout
     global name_entry, subject_entry, date_entry, notes_entry
+
 
     # Entry fields for editing (defined outside perform_search so accessible globally)
     CTkLabel(edit_edit_frame, text="Customer Name:", font=('Helvetica', 15)).grid(row=3, column=0, padx=10, pady=5, sticky='e')
@@ -319,7 +429,9 @@ def search_window():
     date_entry.grid(row=5, column=1, padx=(10,0), pady=5, sticky="nsew")
 
     CTkLabel(edit_edit_frame, text="Notes:", font=('Helvetica', 15)).grid(row=6, column=0, padx=10, pady=5, sticky='e')
-    notes_entry = CTkTextbox(edit_edit_frame, width=350, height=400, font=('Helvetica', 15))
+    notes_font = CTkFont(family="Helvetica", size=15, weight="normal", slant="roman")
+    notes_entry = CTkTextbox(edit_edit_frame, width=600, height=400, font=("Helvetica", 15))
+    # notes_entry = CTkTextbox(edit_edit_frame, width=350, height=400, font=notes_font)
     notes_entry.grid(row=6, column=1, padx=(10,0), pady=5, sticky="nsew")
 
     # Success message label (initially empty)
@@ -341,7 +453,7 @@ def search_window():
         nonlocal auto_save_timer
         if auto_save_timer:
             edit_edit_frame.after_cancel(auto_save_timer)  # Cancel the existing timer if present
-        auto_save_timer = edit_edit_frame.after(10000, auto_save_changes)  # Set the timer to 10 seconds
+        auto_save_timer = edit_edit_frame.after(2000, auto_save_changes)  # Set the timer to 10 seconds
 
     # Perform search function
     def perform_search(customer_name, subject):
@@ -376,33 +488,6 @@ def search_window():
             notes_entry.delete('1.0', tk.END)
             notes_entry.insert(tk.END, record[3])
 
-            status_label.configure(text=f"Record {index + 1} of {total_records}")
-
-        def next_record():
-            global current_record_index
-            if current_record_index < total_records - 1:
-                current_record_index += 1
-                display_record(current_record_index)
-
-        def prev_record():
-            global current_record_index
-            if current_record_index > 0:
-                current_record_index -= 1
-                display_record(current_record_index)
-
-        '''
-        # Navigation buttons (Previous and Next)
-        button_frame = Frame(edit_edit_frame, bg='gray')
-        button_frame.grid(row=7, column=0, columnspan=2, pady=(10, 0), padx=7)
-        
-        prev_button = Button(button_frame, text="Previous", bg='green', command=prev_record, font=('Helvetica', 10))
-        next_button = Button(button_frame, text="Next", bg='green', command=next_record, font=('Helvetica', 10))
-
-        prev_button.pack(side=tk.LEFT, padx=10)
-        next_button.pack(side=tk.RIGHT, padx=10)
-        '''
-        status_label = Label(edit_edit_frame, text=f"Record 1 of {total_records}", font=('Helvetica', 10), bg='gray')
-        status_label.grid(row=7, column=0, columnspan=2, padx=10, pady=10)
 
         display_record(current_record_index)
         conn.close()
@@ -470,7 +555,7 @@ def about():
     lbl = Label(about_window, text='Copyright ©arbrtech. All Rights Reserved', fg='white', bg='#36454F')
     #lbl.pack(pady=90, anchor='s')
     lbl.grid(row=0, column=1, pady=(10, 0), padx=20)
-    lbl2 = Label(about_window, text='Version 1.1.3',fg='white', bg='#36454F')
+    lbl2 = Label(about_window, text='Version 1.1.9',fg='white', bg='#36454F')
     lbl2.grid(row=1, column=1, pady=(10, 0), padx=20)
     #lbl2.pack(pady=90, anchor='w')
 
@@ -493,7 +578,7 @@ def add_new():
 
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT name FROM customer")
+        cursor.execute("SELECT DISTINCT name FROM customer ORDER BY name COLLATE NOCASE")
         customer_names = cursor.fetchall()
         conn.close()
 
@@ -503,40 +588,42 @@ def add_new():
     # Load the customer names into the dropdown menu
     customer_names_list = load_customer_names()
 
-    customer_name_lbl = Label(file_add_frame, text='Select or Add Customer:', font=('Helvetica', 10), bg='gray')
+    customer_name_lbl = CTkLabel(file_add_frame, text='Select or Add Customer:', font=('Helvetica', 15))
     customer_name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='e')
+
 
     customer_name_var = StringVar(file_add_frame)
 
     # Combining dropdown and entry for customer name
     if customer_names_list:
+
         customer_name_var.set("Select or Add Customer")
-        customer_name_dropdown = customtkinter.CTkOptionMenu(file_add_frame, values=customer_names_list,
+        customer_name_dropdown = customtkinter.CTkOptionMenu(file_add_frame, width=250, values=customer_names_list,
                                                              variable=customer_name_var)
         customer_name_dropdown.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
     else:
         customer_name_var.set("Add New Customer")
 
     # Entry field to allow adding a new customer even when customers are available
-    customer_name_entry = Entry(file_add_frame, textvariable=customer_name_var, width=50)
+    customer_name_entry = CTkEntry(file_add_frame, textvariable=customer_name_var, width=250)
     customer_name_entry.grid(row=1, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # New subject input
-    customer_subject_lbl = Label(file_add_frame, text='New Subject:', font=('Helvetica', 10), bg='gray')
+    customer_subject_lbl = CTkLabel(file_add_frame, text='New Subject:', font=('Helvetica', 15))
     customer_subject_lbl.grid(row=2, column=1, pady=(10, 0), padx=7, sticky='e')
-    customer_subject = Entry(file_add_frame, width=50)
+    customer_subject = CTkEntry(file_add_frame, width=250)
     customer_subject.grid(row=2, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # Date input
-    customer_date_lbl = Label(file_add_frame, text='Date: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
+    customer_date_lbl = CTkLabel(file_add_frame, text='Date: ', font=('Helvetica', 15), justify=LEFT)
     customer_date_lbl.grid(row=3, column=1, pady=(10, 0), padx=7, sticky='e')
     customer_date = DateEntry(file_add_frame, date_pattern='dd-mm-yyyy')
     customer_date.grid(row=3, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # Notes input
-    customer_info_lbl = Label(file_add_frame, text='Notes: ', font=('Helvetica', 10), bg='gray', justify=LEFT)
+    customer_info_lbl = CTkLabel(file_add_frame, text='Notes: ', font=('Helvetica', 15), justify=LEFT)
     customer_info_lbl.grid(row=4, column=1, pady=(10, 0), padx=7, sticky='e')
-    customer_info = Text(file_add_frame, height=25, width=52)
+    customer_info = CTkTextbox(file_add_frame, height=500, width=1050)
     customer_info.grid(row=4, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # Submit new subject for the selected or new customer
@@ -583,18 +670,28 @@ def add_new():
         finally:
             conn.close()
 
-    submit_btn = Button(file_add_frame, text='Save', bg='green', font=('Helvetica', 10), command=submit)
+    submit_btn = CTkButton(file_add_frame, text='Save', font=('Helvetica', 15), command=submit)
     submit_btn.grid(row=5, column=2, pady=(10, 0), padx=7)
 
 
-#Hide all frame function
+
+
+'''
 def hide_all_frame():
-    file_add_frame.pack_forget()
-    edit_edit_frame.pack_forget()
-    edit_delete_frame.pack_forget()
-    password_frame.pack_forget()
-    main_frame.pack_forget()
-    show_frame.pack_forget()
+    for frame in [file_add_frame, edit_edit_frame, edit_delete_frame, password_frame, main_frame, show_frame, add_user_frame, edit_user_frame, delete_user_frame]:
+        frame.pack_forget()  # Hide all frames before switching
+'''
+def hide_all_frame():
+    frames = [
+        file_add_frame, edit_edit_frame, edit_delete_frame,
+        password_frame, main_frame, show_frame,
+        add_user_frame, edit_user_frame, delete_user_frame
+    ]
+
+    for frame in frames:
+        # Check if the frame is already packed before calling pack_forget
+        if frame.winfo_ismapped():
+            frame.pack_forget()  # Hide all frames before switching
 
 def show():
     hide_all_frame()
@@ -610,7 +707,7 @@ def show():
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
 
-        cur_sor.execute("SELECT DISTINCT name FROM customer")
+        cur_sor.execute("SELECT DISTINCT name FROM customer ORDER BY name COLLATE NOCASE")
         customer_names = cur_sor.fetchall()
         conn.close()
 
@@ -623,10 +720,10 @@ def show():
         cur_sor = conn.cursor()
 
         if search_term:
-            query = "SELECT DISTINCT subject FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE"
+            query = "SELECT DISTINCT subject FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE ORDER BY subject COLLATE NOCASE"
             cur_sor.execute(query, ('%' + customer_name + '%', '%' + search_term + '%'))
         else:
-            query = "SELECT DISTINCT subject FROM customer WHERE name LIKE ? COLLATE NOCASE"
+            query = "SELECT DISTINCT subject FROM customer WHERE name LIKE ? COLLATE NOCASE ORDER BY subject COLLATE NOCASE"
             cur_sor.execute(query, ('%' + customer_name + '%',))
 
         subjects = cur_sor.fetchall()
@@ -725,7 +822,7 @@ def show():
         conn = sqlite3.connect(db_path)
         cur_sor = conn.cursor()
 
-        cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE",
+        cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE ORDER BY subject COLLATE NOCASE",
                         ('%' + customer_name + '%', '%' + subject + '%'))
         records = cur_sor.fetchall()
 
@@ -737,7 +834,7 @@ def show():
         global current_record_index
         current_record_index = 0
         total_records = len(records)
-
+        '''
         def next_record():
             """ Show the next record """
             global current_record_index
@@ -751,23 +848,23 @@ def show():
             if current_record_index > 0:
                 current_record_index -= 1
                 display_record(records[current_record_index])
-
+'''
         # Display the first record
         display_record(records[current_record_index])
 
         # Create navigation buttons for the records
         button_frame = Frame(show_frame, bg='gray')
         button_frame.grid(row=5, column=0, columnspan=2, pady=(20, 0))
-
+        '''
         prev_btn = CTkButton(button_frame, text='Previous', command=prev_record)
         next_btn = CTkButton(button_frame, text='Next', command=next_record)
 
         prev_btn.pack(side=LEFT, padx=20)
         next_btn.pack(side=RIGHT, padx=20)
-
+        
         status_label = CTkLabel(show_frame, text=f"Record {current_record_index + 1} of {total_records}")
         status_label.grid(row=6, column=0, columnspan=2, pady=(20, 10))
-
+        '''
         conn.close()
 
     # Fetch button to load the record when customer and subject are selected
@@ -775,183 +872,18 @@ def show():
     #fetch_button.grid(row=2, column=2, padx=10, pady=10)
     fetch_button.grid(row=2, column=2, padx=10, pady=5)
 
-
-'''
-def show():
-    hide_all_frame()
-
-    # Load the database path from settings file
-    db_path = load_settings()
-    if not db_path:
-        messagebox.showerror("Error", "Database path not set. Please configure the database.")
-        return
-
-    # Function to load all distinct customer names from the database
-    def load_customer_names():
-        conn = sqlite3.connect(db_path)
-        cur_sor = conn.cursor()
-
-        cur_sor.execute("SELECT DISTINCT name FROM customer")
-        customer_names = cur_sor.fetchall()
-        conn.close()
-
-        # Flatten the list of customer names
-        return [name[0] for name in customer_names]
-
-    # Function to load all subjects for a selected customer
-    def load_subjects(customer_name):
-        conn = sqlite3.connect(db_path)
-        cur_sor = conn.cursor()
-
-        cur_sor.execute("SELECT DISTINCT subject FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + customer_name + '%',))
-        subjects = cur_sor.fetchall()
-        conn.close()
-
-        # Flatten the list of subjects
-        return [subject[0] for subject in subjects]
-
-    # Load the customer names into the dropdown menu
-    customer_names_list = load_customer_names()
-
-    # If no customers are found, show a message and return
-    if not customer_names_list:
-        messagebox.showinfo("No Data", "No customers found in the database.")
-        return
-
-    # Create the frame for showing records
-    global show_frame
-    show_frame = customtkinter.CTkFrame(master=root, width=800, height=600, fg_color='gray')
-    show_frame.pack(pady=20, padx=60, fill='both', expand=True)
-
-    # Customer Name Dropdown Menu
-    customer_name_var = StringVar(show_frame)
-    customer_name_var.set(customer_names_list[0])  # Set the first customer as default
-
-    name_lbl = Label(show_frame, text='Customer Name:', font=('Helvetica', 10), justify=LEFT, bg='gray')
-    name_lbl.grid(row=0, column=0, pady=(10, 0), padx=7, sticky='e')
-
-    customer_dropdown = customtkinter.CTkOptionMenu(show_frame,width=250, values=customer_names_list, variable=customer_name_var)
-    customer_dropdown.grid(row=0, column=1, pady=(10, 0), padx=7)
-
-    # Subject Dropdown Menu (Initially empty until customer is selected)
-    subject_var = StringVar(show_frame)
-
-    sub_lbl = Label(show_frame, text='Subject:', font=('Helvetica', 10), justify=LEFT, bg='gray')
-    sub_lbl.grid(row=1, column=0, pady=(10, 0), padx=7, sticky='e')
-
-    subject_dropdown = customtkinter.CTkOptionMenu(show_frame,width=250, values=[], variable=subject_var)
-    subject_dropdown.grid(row=1, column=1, pady=(10, 0), padx=7)
-
-    # Function to update the subjects dropdown based on selected customer
-    def update_subjects_dropdown(selected_customer_name):
-        subjects_list = load_subjects(selected_customer_name)
-        if subjects_list:
-            subject_var.set(subjects_list[0])  # Set the first subject as default
-            subject_dropdown.configure(values=subjects_list)
-        else:
-            subject_var.set('')  # Clear the dropdown if no subjects are found
-            subject_dropdown.configure(values=[])
-
-    # Update subjects when customer is selected
-    customer_dropdown.configure(command=lambda value: update_subjects_dropdown(value))
-
-    # Load subjects for the default customer on window load
-    update_subjects_dropdown(customer_name_var.get())
-
-    # Entry for Date and Info
-    date_lbl = Label(show_frame, text='Date:', font=('Helvetica', 10), justify=LEFT, bg='gray')
-    date_lbl.grid(row=2, column=0, pady=(10, 0), padx=7, sticky='e')
-    date = Entry(show_frame, width=60)
-    date.grid(row=2, column=1, pady=(10, 0), padx=7)
-
-    info_lbl = Label(show_frame, text='Info:', font=('Helvetica', 10), bg='gray')
-    info_lbl.grid(row=3, column=0, pady=(10, 0), padx=7, sticky='ne')
-    info = Text(show_frame, height=25, width=45)
-    info.grid(row=3, column=1, pady=(10, 0), padx=7)
-
-    # Function to display the selected record's information
-    def display_record(record):
-        """ Display the customer data in the entry fields """
-        date.delete(0, END)
-        date.insert(0, record[4])
-        info.delete('1.0', END)
-        info.insert('1.0', record[3])
-
-    # Function to fetch and display the first matching record for the selected customer and subject
-    def fetch_record():
-        customer_name = customer_name_var.get()
-        subject = subject_var.get()
-
-        if not customer_name or not subject:
-            messagebox.showwarning("Input Error", "Please select both customer name and subject.")
-            return
-
-        conn = sqlite3.connect(db_path)
-        cur_sor = conn.cursor()
-
-        cur_sor.execute("SELECT * FROM customer WHERE name LIKE ? AND subject LIKE ? COLLATE NOCASE",
-                        ('%' + customer_name + '%', '%' + subject + '%'))
-        records = cur_sor.fetchall()
-
-        if not records:
-            messagebox.showinfo("No Records", "No matching records found.")
-            conn.close()
-            return
-
-        global current_record_index
-        current_record_index = 0
-        total_records = len(records)
-
-        def next_record():
-            """ Show the next record """
-            global current_record_index
-            if current_record_index < len(records) - 1:
-                current_record_index += 1
-                display_record(records[current_record_index])
-
-        def prev_record():
-            """ Show the previous record """
-            global current_record_index
-            if current_record_index > 0:
-                current_record_index -= 1
-                display_record(records[current_record_index])
-
-        # Display the first record
-        display_record(records[current_record_index])
-
-        # Create navigation buttons for the records
-        button_frame = Frame(show_frame, bg='gray')
-        button_frame.grid(row=4, column=0, columnspan=2, pady=(20, 0))
-
-        prev_btn = Button(button_frame, text='Previous', bg='green', command=prev_record)
-        next_btn = Button(button_frame, text='Next', bg='green', command=next_record)
-
-        prev_btn.pack(side=LEFT, padx=20)
-        next_btn.pack(side=RIGHT, padx=20)
-
-        status_label = Label(show_frame, text=f"Record {current_record_index + 1} of {total_records}", bg='gray')
-        status_label.grid(row=5, column=0, columnspan=2, pady=(20, 10))
-
-        conn.close()
-
-    # Fetch button to load the record when customer and subject are selected
-    fetch_button = Button(show_frame, text="Show Record", bg='green', command=fetch_record)
-    fetch_button.grid(row=2, column=2, padx=10, pady=10)
-
-
 z = StringVar()
 y = StringVar()
-'''
 
 def fetch():
     hide_all_frame()
 
     edit_delete_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
-    customer_name_lbl = tk.Label(edit_delete_frame, text='Customer name: ', font=('Helvetica', 10), bg='gray')
+    customer_name_lbl = CTkLabel(edit_delete_frame, text='Customer name: ', font=('Helvetica', 15))
     customer_name_lbl.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
 
-    del_customer_name = tk.Entry(edit_delete_frame, textvariable=y, width=50)
+    del_customer_name = CTkEntry(edit_delete_frame, textvariable=y, width=300)
     del_customer_name.insert(0, 'Enter customer name')
     del_customer_name.configure(state='disabled')
 
@@ -963,7 +895,7 @@ def fetch():
     del_customer_name.grid(row=0, column=2, pady=(10, 0), padx=7, sticky='w')
 
     # Create a listbox to show multiple matching records
-    records_listbox = tk.Listbox(edit_delete_frame, height=6, selectmode=tk.SINGLE, width=60)
+    records_listbox = Listbox(edit_delete_frame, height=6, selectmode=tk.SINGLE, width=60)
     records_listbox.grid(row=2, column=2, pady=(10, 0), padx=7)
 
     def search_records():
@@ -983,7 +915,7 @@ def fetch():
         cur_sor = conn.cursor()
 
         # Find matching records with a partial search
-        cur_sor.execute("SELECT rowid, name, date FROM customer WHERE name LIKE ? COLLATE NOCASE", ('%' + customer_name + '%',))
+        cur_sor.execute("SELECT rowid, name, date FROM customer WHERE name LIKE ? COLLATE NOCASE ORDER BY name COLLATE NOCASE", ('%' + customer_name + '%',))
         records = cur_sor.fetchall()
 
         # Clear previous listbox entries
@@ -1000,7 +932,7 @@ def fetch():
 
         conn.close()
 
-    search_button = tk.Button(edit_delete_frame, text='Search',bg='green', command=search_records)
+    search_button = CTkButton(edit_delete_frame, text='Search', command=search_records)
     search_button.grid(row=0, column=3, padx=10)
 
     def delete():
@@ -1046,75 +978,356 @@ def fetch():
             conn.close()
 
     # Delete record button
-    delete_btn = tk.Button(edit_delete_frame, text='Delete',bg='green', command=delete)
+    delete_btn = CTkButton(edit_delete_frame, text='Delete', command=delete)
     delete_btn.grid(row=8, column=2, columnspan=2, pady=10, padx=10, ipadx=95)
 
+# Function to load database settings
+def load_settings():
+    # Load the database path from settings file
+    if os.path.exists('db_settings.json'):
+        with open('db_settings.json', 'r') as settings_file:
+            settings = json.load(settings_file)
+            return settings.get("database_path")
+    return None
 
 def password():
     hide_all_frame()
-    # create global variables for text boxes
-    #global customer_name
-    # If password_frame already has children, destroy them
+
     for widget in password_frame.winfo_children():
         widget.destroy()
 
     password_frame.pack(pady=20, padx=60, fill='both', expand=True)
 
     def random():
+        # Define allowed characters: letters and digits only, no special characters
+        allowed_chars = list(string.ascii_letters + string.digits)
 
-        special_chars = "!@#$%^&*()_+"
-        # You can exclude certain characters here if desired
-        allowed_chars = [chr(x) for x in range(33, 127) if chr(x) not in ";:`"]
         # Clear entry box
         pw_entry.delete(0, END)
+
         # Get password length and convert to integer
         pw_length = int(my_entry.get())
-        # create a variable to hold password
-        my_password = ''
-        '''
-        # Loop through password length
-        for x in range(pw_length):
-            my_password += chr(randint(33, 126))
-        '''
+
         # Generate password
         my_password = ''.join([allowed_chars[randint(0, len(allowed_chars) - 1)] for _ in range(pw_length)])
 
         # Output password to the screen
         pw_entry.insert(0, my_password)
 
-    # Copy to clipboard
+    # Copy to clipboard function
     def clipping():
-
-        # Clear the clipborad
         password_frame.clipboard_clear()
-        # Copy to clipborad
         password_frame.clipboard_append(pw_entry.get())
-        tkinter.messagebox.showinfo('', 'Password copied')
+        messagebox.showinfo('', 'Password copied')
 
-    lf = LabelFrame(password_frame, text='Choose Length of Password',bg='gray')
+    # Save password to the database
+    def save_password():
+        db_path = load_settings()
+        if not db_path:
+            messagebox.showerror("Error", "Database path not set.")
+            return
+
+        # Get the name, username, and password from the input fields
+        name = name_entry.get().strip()
+        username = username_entry.get().strip()
+        password = pw_entry.get().strip()
+
+        # Validate input
+        if not name or not username or not password:
+            messagebox.showerror("Input Error", "Please enter name, username, and password.")
+            return
+
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+
+        # Create the table if it doesn't exist
+        c.execute('''CREATE TABLE IF NOT EXISTS credentials (
+                        name TEXT,
+                        username TEXT UNIQUE,
+                        password TEXT
+                    )''')
+
+        # Check if the username already exists
+        c.execute("SELECT * FROM credentials WHERE username = ?", (username,))
+        existing_user = c.fetchone()
+
+        if existing_user:
+            messagebox.showerror("Error", "Username already exists. Please choose a different username.")
+            conn.close()
+            return
+
+        # Insert the name, username, and password into the database
+        c.execute("INSERT INTO credentials (name, username, password) VALUES (?, ?, ?)", (name, username, password))
+        conn.commit()
+        conn.close()
+
+        messagebox.showinfo("Success", "Password saved to the database!")
+
+        # Clear the fields after saving
+        name_entry.delete(0, END)
+        username_entry.delete(0, END)
+        pw_entry.delete(0, END)
+
+    # UI for Password Length
+    lf = LabelFrame(password_frame, text='Choose Length of Password', font=('Helvetica', 12), bd=2, bg='gray')
     lf.pack(pady=20)
-    #password_frame.grid(row=0, column=1, pady=(10, 0), padx=7, sticky='w')
-    my_entry = Spinbox(lf, from_=5, to=25, font=('Helvetica', 24),bg='gray')
+
+    my_entry = Spinbox(lf, from_=5, to=25, font=('Helvetica', 24), bg='gray')
     my_entry.pack(pady=20, padx=20)
-    lf2 = LabelFrame(password_frame, text='Generated Password', bd=5,bg='gray')
+
+    # UI for Name Entry
+    lf2 = LabelFrame(password_frame, text='Enter a Name for the Password', font=('Helvetica', 12), bd=2, bg='gray')
     lf2.pack()
-    # pw_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='systembuttonface')
-    pw_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='gray')
+
+    name_entry = Entry(lf2, text='', font=('Helvetica', 24), bd=0, bg='gray')
+    name_entry.pack(pady=(0, 20))
+
+    # UI for Username Entry
+    lf3 = LabelFrame(password_frame, text='Enter the username', font=('Helvetica', 12), bd=2, bg='gray')
+    lf3.pack()
+
+    username_entry = Entry(lf3, text='', font=('Helvetica', 24), bd=0, bg='gray')
+    username_entry.pack(pady=(0, 20))
+
+    # UI for Generated Password
+    lf4 = LabelFrame(password_frame, text='Generated Password', font=('Helvetica', 12), bd=2, bg='gray')
+    lf4.pack()
+
+    pw_entry = Entry(lf4, text='', font=('Helvetica', 24), bd=0, bg='gray')
     pw_entry.pack(pady=(0, 20))
-    # Label Frame
-    # Create our buttons
-# Create frame for our buttons
-    my_frame = Frame(password_frame,bg='gray')
+
+    # Frame for Buttons
+    my_frame = Frame(password_frame, bg='gray')
     my_frame.pack(pady=20)
-    my_button = Button(my_frame, text='Generate Strong Password',bg='green', command=random)
+
+    # Buttons
+    my_button = Button(my_frame, text='Generate Strong Password', bg='green', command=random)
     my_button.grid(row=0, column=0, padx=10)
 
-    clip_button = Button(my_frame, text='Copy To Clipboard',bg='green', command=clipping)
+    clip_button = Button(my_frame, text='Copy To Clipboard', bg='green', command=clipping)
     clip_button.grid(row=0, column=1, padx=10)
+
+    save_button = Button(my_frame, text='Save Password', bg='green', command=save_password)
+    save_button.grid(row=0, column=2, padx=10)
+
+
+admin_user = "admin"  # Define the admin username
+
+# Function to show the Add User window (admin only)
+def add_user_window():
+    hide_all_frame()  # Ensure all frames are hidden first
+    for widget in add_user_frame.winfo_children():
+        widget.destroy()
+    add_user_frame.pack(pady=20, padx=60, fill='both', expand=True)
+
+    # Labels and Entries for Username and Password
+    CTkLabel(add_user_frame, text="New Username:").pack(pady=10)
+    new_username_entry = customtkinter.CTkEntry(add_user_frame, width=250)
+    new_username_entry.pack(pady=5)
+
+    CTkLabel(add_user_frame, text="New Password:").pack(pady=10)
+    new_password_entry = customtkinter.CTkEntry(add_user_frame, width=250, show='*')
+    new_password_entry.pack(pady=5)
+
+    # Function to add the user
+    def add_user():
+        new_username = new_username_entry.get().strip()
+        new_password = new_password_entry.get().strip()
+
+        if not new_username or not new_password:
+            messagebox.showerror("Input Error", "Username and Password cannot be empty.")
+            return
+
+        # Hash the password
+        hashed_password = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt())
+
+        # Insert the new user into the database
+        db_path = load_settings()
+        if not db_path:
+            messagebox.showerror("Error", "Database path not set.")
+            return
+
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Check if the username already exists
+        cursor.execute("SELECT * FROM users WHERE username = ?", (new_username,))
+        if cursor.fetchone():
+            messagebox.showerror("Error", "Username already exists. Please choose a different username.")
+            conn.close()
+            return
+
+        # Insert new user
+        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_username, hashed_password))
+        conn.commit()
+        conn.close()
+
+        messagebox.showinfo("Success", f"User '{new_username}' added successfully!")
+        new_username_entry.delete(0, END)
+        new_password_entry.delete(0, END)
+
+    # Add Button
+    add_button = CTkButton(add_user_frame, text="Add User", command=add_user)
+    add_button.pack(pady=20)
+
+
+# Function to show the Delete User window (admin only)
+def delete_user_window():
+    hide_all_frame()  # Hide other frames
+    for widget in delete_user_frame.winfo_children():
+        widget.destroy()
+    delete_user_frame.pack(pady=20, padx=60, fill='both', expand=True)
+
+    CTkLabel(delete_user_frame, text="Select a User to Delete:").pack(pady=10)
+
+    users_listbox = Listbox(delete_user_frame, width=40, height=10)
+    users_listbox.pack(pady=10)
+
+    db_path = load_settings()
+    if not db_path:
+        messagebox.showerror("Error", "Database path not set.")
+        return
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Fetch all users from the database except for the admin
+    cursor.execute("SELECT username FROM users WHERE username != ?", (admin_user,))
+    users = cursor.fetchall()
+
+    # Insert all users into the listbox
+    for user in users:
+        users_listbox.insert(END, user[0])
+
+    conn.close()
+
+    def delete_selected_user():
+        selected_user = users_listbox.get(ACTIVE)
+        if not selected_user:
+            messagebox.showerror("Selection Error", "Please select a user to delete.")
+            return
+
+        confirm = messagebox.askyesno("Delete Confirmation", f"Are you sure you want to delete user '{selected_user}'?")
+        if confirm:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            # Delete the selected user
+            cursor.execute("DELETE FROM users WHERE username = ?", (selected_user,))
+            conn.commit()
+            conn.close()
+            # Refresh the listbox after deletion
+            users_listbox.delete(ACTIVE)
+            messagebox.showinfo("Success", f"User '{selected_user}' has been deleted successfully.")
+
+    # Delete Button
+    delete_button = CTkButton(delete_user_frame, text="Delete User", command=delete_selected_user)
+    delete_button.pack(pady=10)
+
+# Function to show the Edit User window (admin only)
+
+def edit_user_window():
+    hide_all_frame()  # Hide other frames
+    for widget in edit_user_frame.winfo_children():
+        widget.destroy()
+
+    edit_user_frame.pack(pady=20, padx=60, fill='both', expand=True)
+
+    CTkLabel(edit_user_frame, text="Select a User to Edit:").pack(pady=10)
+
+    users_listbox = Listbox(edit_user_frame, width=40, height=10)
+    users_listbox.pack(pady=10)
+
+    db_path = load_settings()
+    if not db_path:
+        messagebox.showerror("Error", "Database path not set.")
+        return
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Fetch all users from the database except for the admin
+    cursor.execute("SELECT username FROM users WHERE username != ?", (admin_user,))
+    users = cursor.fetchall()
+
+    # Insert all users into the listbox
+    for user in users:
+        users_listbox.insert(END, user[0])
+
+    conn.close()
+
+    # Function to load selected user details
+    def load_selected_user():
+        selected_user = users_listbox.get(ACTIVE)
+        if not selected_user:
+            messagebox.showerror("Selection Error", "Please select a user to edit.")
+            return
+
+        # Fetch the selected user's information from the database
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT username FROM users WHERE username = ?", (selected_user,))
+        user_data = cursor.fetchone()
+        conn.close()
+
+        if user_data:
+            username_entry.delete(0, END)
+            username_entry.insert(0, user_data[0])
+            password_entry.delete(0, END)  # Leave password empty for security reasons
+
+    # Labels and input fields for editing the user
+    CTkLabel(edit_user_frame, text="Username:").pack(pady=10)
+    username_entry = customtkinter.CTkEntry(edit_user_frame, width=250)
+    username_entry.pack(pady=5)
+
+    CTkLabel(edit_user_frame, text="New Password (optional):").pack(pady=10)
+    password_entry = customtkinter.CTkEntry(edit_user_frame, width=250, show='*')
+    password_entry.pack(pady=5)
+
+    def save_user_changes():
+        selected_user = users_listbox.get(ACTIVE)
+        new_username = username_entry.get().strip()
+        new_password = password_entry.get().strip()
+
+        if not selected_user or not new_username:
+            messagebox.showerror("Input Error", "Username cannot be empty.")
+            return
+
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Check if the new username already exists (but is not the current user)
+        cursor.execute("SELECT username FROM users WHERE username = ? AND username != ?", (new_username, selected_user))
+        if cursor.fetchone():
+            messagebox.showerror("Input Error", "Username already exists. Please choose another.")
+            conn.close()
+            return
+
+        # Update the username (and password if provided)
+        if new_password:
+            hashed_password = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt())
+            cursor.execute("UPDATE users SET username = ?, password = ? WHERE username = ?", (new_username, hashed_password, selected_user))
+        else:
+            cursor.execute("UPDATE users SET username = ? WHERE username = ?", (new_username, selected_user))
+
+        conn.commit()
+        conn.close()
+
+        # Update the listbox with the new username
+        users_listbox.delete(ACTIVE)
+        users_listbox.insert(END, new_username)
+        messagebox.showinfo("Success", f"User '{selected_user}' has been updated to '{new_username}'")
+
+    # Button to load the selected user's data
+    load_button = CTkButton(edit_user_frame, text="Load User", command=load_selected_user)
+    load_button.pack(pady=10)
+
+    # Button to save changes
+    save_button = CTkButton(edit_user_frame, text="Save Changes", command=save_user_changes)
+    save_button.pack(pady=10)
 
 
 #Create a  menu item
-file_menu = Menu(my_menu)
+file_menu = Menu(my_menu,tearoff=0)
 my_menu.add_cascade(label="File", menu=file_menu)
 #file_menu.add_command(label="Main Window",command=find_customer)
 file_menu.add_separator()
@@ -1123,19 +1336,28 @@ file_menu.add_separator()
 file_menu.add_command(label="Exit",command=root.quit)
 
 # Create a menu item
-edit_menu = Menu(my_menu)
+edit_menu = Menu(my_menu,tearoff=0)
 my_menu.add_cascade(label="Edit",menu=edit_menu)
+edit_menu.add_separator()
 edit_menu.add_command(label="Edit Record",command=search_window)
+edit_menu.add_separator()
 edit_menu.add_command(label="Delete Record",command=fetch)
 
 # Create a password item
-password_menu = Menu(my_menu)
+password_menu = Menu(my_menu,tearoff=0)
 my_menu.add_cascade(label="Password",menu=password_menu)
+password_menu.add_separator()
 password_menu.add_command(label="Generate Password",command=password)
 
+
+# Menu for user management (only accessible by admin)
+user_menu = Menu(my_menu,tearoff=0)
+
+
 # Create a Options item
-option_menu = Menu(my_menu)
+option_menu = Menu(my_menu,tearoff=0)
 my_menu.add_cascade(label="Options",menu=option_menu)
+option_menu.add_separator()
 #option_menu.add_command(label="Find",command=find)
 #option_menu.add_command(label="Find Next",command=our_command)
 option_menu.add_command(label="About",command=about)
@@ -1148,6 +1370,10 @@ edit_edit_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_co
 edit_delete_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 password_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
 show_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+add_user_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+edit_user_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+delete_user_frame = customtkinter.CTkFrame(master=root, width=800,height=600,fg_color='gray')
+
 
 
 
